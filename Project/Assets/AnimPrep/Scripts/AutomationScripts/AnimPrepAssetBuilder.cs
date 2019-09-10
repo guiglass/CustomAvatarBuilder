@@ -48,39 +48,68 @@ using System.Threading;
 
 	int characterType = 0;
 
-	void OnGUI()
-	{
+    void OnGUI()
+    {
 
-		var customButton = new GUIStyle ("Button");
-		GUIStyle customLabel;
+        var customButton = new GUIStyle("Button");
+        GUIStyle customLabel;
 
-		customLabel = new GUIStyle ("Label");
-		customLabel.fixedHeight = 50;
+        customLabel = new GUIStyle("Label");
+        customLabel.fixedHeight = 50;
 
-		GUI.Box (new Rect (0,0,50,50), new GUIContent("", logotex), customLabel);
+        GUI.Box(new Rect(0, 0, 50, 50), new GUIContent("", logotex), customLabel);
 
-		Rect r = (Rect)EditorGUILayout.BeginVertical(customLabel);
+        Rect r = (Rect)EditorGUILayout.BeginVertical(customLabel);
 
-		customLabel = new GUIStyle ("Label");
-		customLabel.alignment = TextAnchor.MiddleCenter;
-		customLabel.fontSize = 14;
-		customLabel.normal.textColor = Color.black;
-		customLabel.fontStyle = FontStyle.Bold;
+        customLabel = new GUIStyle("Label");
+        customLabel.alignment = TextAnchor.MiddleCenter;
+        customLabel.fontSize = 14;
+        customLabel.normal.textColor = Color.black;
+        customLabel.fontStyle = FontStyle.Bold;
 
-		GUILayout.Label("Custom Avatar Builder", customLabel);
+        GUILayout.Label("Custom Avatar Builder", customLabel);
 
-		customLabel = new GUIStyle ("Label");
-		customLabel.alignment = TextAnchor.MiddleCenter;
-		customLabel.fontSize = 11;
-		customLabel.normal.textColor = new Color(0.5f,0.5f,0.5f);
-		customLabel.fontStyle = FontStyle.Bold;
+        customLabel = new GUIStyle("Label");
+        customLabel.alignment = TextAnchor.MiddleCenter;
+        customLabel.fontSize = 11;
+        customLabel.normal.textColor = new Color(0.5f, 0.5f, 0.5f);
+        customLabel.fontStyle = FontStyle.Bold;
 
-		GUILayout.Label("Version: 2.0.0 (Lite)", customLabel);
-		EditorGUILayout.EndVertical();
+        GUILayout.Label("Version: 2.0.0 (Lite) ", customLabel);
+
+        EditorGUILayout.EndVertical();
 
 
+        customLabel = new GUIStyle("Button");
+        customLabel.alignment = TextAnchor.MiddleCenter;
+        customLabel.fontSize = 10;
+        customLabel.normal.textColor = new Color(0.2f, 0.2f, 0.2f);
+        customLabel.fontStyle = FontStyle.Italic;
+        customLabel.fixedWidth = 100;
+        customLabel.normal.textColor = new Color(0.7f, 0.0f, 0.0f);
 
-		customLabel = new GUIStyle ("Button");
+        //EditorGUILayout.LabelField("PATH WARNING!", customLabel, GUILayout.Width(100));
+
+        if (!SystemInfo.operatingSystem.ToLower().Contains("windows 10"))
+        {
+            if (Application.dataPath.Length > 40) { 
+                if (GUILayout.Button("PATH WARNING!", customLabel))
+                {
+                    EditorUtility.DisplayDialog("Error",
+                         string.Format(
+                             "Your OS is: \"{0}\" which may experience issues with long paths." +
+                             "\n\nIt would be wise to move this AvatarBuilder project as close to \"C:\\\" as possible" +
+                             "\n\nCurrent application datapath:\n{1}", 
+                             SystemInfo.operatingSystem, Application.dataPath
+                             ),
+                         "Ok");
+
+                    return;
+                }
+            }
+        }
+        
+        customLabel = new GUIStyle ("Button");
 		customLabel.alignment = TextAnchor.MiddleCenter;
 		customLabel.fontSize = 14;
 		customLabel.normal.textColor = new Color(0.0f,0.0f,1.0f);
@@ -427,8 +456,14 @@ using System.Threading;
 			}
 		}
 		GUILayout.EndHorizontal();
+        EditorGUILayout.Space();
 
-		if (GUI.changed)
+        customLabel = new GUIStyle("Label");
+        customLabel.alignment = TextAnchor.MiddleCenter;
+        customLabel.fontStyle = FontStyle.Italic;
+        GUILayout.Label(string.Format("{0} - {1}", Application.unityVersion, SystemInfo.operatingSystem), customLabel);
+
+        if (GUI.changed)
 		{
 
 			CheckBlenderAppExists ();

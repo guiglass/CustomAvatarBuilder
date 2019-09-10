@@ -535,7 +535,7 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
         assetPath = assetPath.Replace('/', Path.DirectorySeparatorChar); //fix the path so that it uses the correct seperator for this system
 
         if (!assetPath.StartsWith (processingFolder)) { //only check textures in the upload processing folder
-			Debug.LogWarning(assetPath + " TEXTURE DOES NOT BELONG TO: " + processingFolder);
+			//Debug.LogWarning(assetPath + " TEXTURE DOES NOT BELONG TO: " + processingFolder);
 			return;
 		}
 
@@ -1379,7 +1379,6 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 
 			} else if (assetPath.StartsWith (assetBundlesFolder)) { //ASSET BUNDLE FINAL PROCESSING 
 
-                Debug.Log("assetPath.StartsWith (assetBundlesFolder)");
 				if (!Path.GetExtension (assetPath).Contains (AssetBundleVariant)) {
 					continue; //might be a .meta file, just ignore it
 				}
@@ -1392,12 +1391,8 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 				}
 					
 				string assetDestFolder = Path.Combine (assetBundlesFolder, Path.GetFileNameWithoutExtension(assetPath).ToLower() );
-                Debug.Log("assetDestFolder " + assetDestFolder);
                 string jsonPath = Path.Combine (assetFolder, uuid+".json");
 				if (!File.Exists (jsonPath)) {
-                    Debug.Log("Path.GetDirectoryName (assetPath)" + Path.GetDirectoryName(assetPath));
-                    Debug.Log("assetBundlesFolder " + assetBundlesFolder);
- 
                     if (Path.GetDirectoryName (assetPath).Equals(assetBundlesFolder)) {
 					
                     //if (Path.GetFullPath(Path.GetDirectoryName (assetPath)).Equals(Path.GetFullPath(assetBundlesFolder))) {
@@ -1424,7 +1419,6 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 				File.Delete (jsonPath);//no longer needed
 
                 var to = Path.Combine(assetDestFolder, assetFileName);
-                Debug.Log("CreateDirectory " + Path.GetDirectoryName(to));
 				if (!Directory.Exists(Path.GetDirectoryName(to))) {
 					Directory.CreateDirectory (Path.GetDirectoryName(to));
 				}
