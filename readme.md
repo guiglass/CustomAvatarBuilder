@@ -27,9 +27,14 @@ Copy the entire folder:
 
 `avatar$00000000-0000-0000-0000-000000000000$male_military`
 
-And paste it into:
+And paste it into the folder at the path:
 
 `C:\Users\[User]\AppData\LocalLow\Animation Prep Studios\AnimPrep\VR_MocapAssets`
+
+A copy/paste friendly version:
+
+`%USERPROFILE%\AppData\LocalLow\Animation Prep Studios\AnimationPrepStudio\VR_MocapAssets`
+
 ___
 ### Installing
 
