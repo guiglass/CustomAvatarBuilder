@@ -38,8 +38,8 @@ A copy/paste friendly version:
 ___
 ### Installing
 
-It is recommended to open this project using [Unity 2019](https://unity3d.com/unity/beta/2019.1 "Unity Engine Download").
-You will also require [Blender 2.79](https://www.blender.org/download/ "Blender Download") to be installed.
+It is recommended to open this project using [Unity 2019](https://unity3d.com/unity/whats-new/2019.2.4 "Unity Engine Download").
+You will also require [Blender 2.79b](https://www.blender.org/download/ "Blender Download") to be installed.
 
 Start Unity hub and navigate to this project, then select the `project` directory to start the scene.
 
