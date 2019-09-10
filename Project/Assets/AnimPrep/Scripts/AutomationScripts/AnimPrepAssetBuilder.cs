@@ -95,7 +95,7 @@ using System.Threading;
             if (Application.dataPath.Length > 40) { 
                 if (GUILayout.Button("PATH WARNING!", customLabel))
                 {
-                    EditorUtility.DisplayDialog("Error",
+                    EditorUtility.DisplayDialog("Warning",
                          string.Format(
                              "Your OS is: \"{0}\" which may experience issues with long paths." +
                              "\n\nIt would be wise to move this AvatarBuilder project as close to \"C:\\\" as possible" +
