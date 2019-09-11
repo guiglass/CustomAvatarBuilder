@@ -1157,7 +1157,7 @@ def ProcessModelFile(context, filepath, blenderpath, LogMessage):
 			shutil.rmtree(dest_directory)# remove everything
 
 		shutil.move(temp_dir, dest_directory) #move the temp files to a processing folder located next to the original .blend file
-		##shutil.rmtree(temp_dir)# remove everything
+		#shutil.rmtree(temp_dir)# remove everything
 		pass
 
 	LogMessage("Attempting to copy textures from source directoy")
@@ -1167,21 +1167,16 @@ def ProcessModelFile(context, filepath, blenderpath, LogMessage):
 	if os.path.isdir(source_textures_directory):
 		LogMessage("Found some source textures, copying folder now.")
 		#copy_tree (source_textures_directory, textures_directory)
+		os.makedirs(os.path.dirname(textures_directory + r"\\"), exist_ok=True) #do not raise the target directory already exists error
 
 		src_files = os.listdir(source_textures_directory)
 		for file_name in src_files:
-		    full_file_name = os.path.join(source_textures_directory, file_name)
-		    if os.path.isfile(full_file_name):
-		        shutil.copy(full_file_name, textures_directory)
-
+			full_file_name = os.path.join(source_textures_directory, file_name)
+			if os.path.isfile(full_file_name):
+				shutil.copy(full_file_name, textures_directory )
 	else:
 		LogMessage("Could not find a \"Textures\" directory for this model.", 'warning')
 
-
-
-	#LogMessage("Deleting temp .blend file from project directory.")
-
-	#os.remove(filepathcopy)
 
 	blender_json_path = os.path.join(dest_directory, "blender.json")
 
