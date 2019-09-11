@@ -75,7 +75,7 @@ using System.Threading;
         customLabel.normal.textColor = new Color(0.5f, 0.5f, 0.5f);
         customLabel.fontStyle = FontStyle.Bold;
 
-        GUILayout.Label("Version: 2.0.0 (Lite) ", customLabel);
+        GUILayout.Label("Version: 2.0.1 (Lite) ", customLabel);
 
         EditorGUILayout.EndVertical();
 
@@ -98,7 +98,7 @@ using System.Threading;
                     EditorUtility.DisplayDialog("Warning",
                          string.Format(
                              "Your OS is: \"{0}\" which may experience issues with long paths." +
-                             "\n\nIt would be wise to move this AvatarBuilder project as close to \"C:\\\" as possible" +
+                             "\n\nIt would be wise to move this AvatarBuilder project as close to \"C:\\\" as possible." +
                              "\n\nCurrent application datapath:\n{1}", 
                              SystemInfo.operatingSystem, Application.dataPath
                              ),
