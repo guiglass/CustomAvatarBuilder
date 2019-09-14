@@ -39,6 +39,8 @@ You will also require [Blender 2.79b](https://download.blender.org/release/Blend
 
 Start Unity hub and navigate to this project, then select the `project` directory to open the project. Then load `Builder.scene`
 
+![Test Image 4](https://raw.githubusercontent.com/guiglass/PropBuilder/master/Documentation/scene.png)
+
 ## License
 
 This project is licensed under the GNU GENERAL PUBLIC LICENSE - see the [LICENSE.md](LICENSE.md) file for details
