@@ -39,7 +39,7 @@ You will also require [Blender 2.79b](https://download.blender.org/release/Blend
 
 Start Unity hub and navigate to this project, then select the `project` directory to open the project. Then load `Builder.scene`
 
-![Test Image 4](https://raw.githubusercontent.com/guiglass/PropBuilder/master/Documentation/scene.png)
+![Test Image 4](https://github.com/guiglass/CustomPropBuilder/blob/master/Documentation/scene.png)
 
 ## License
 
