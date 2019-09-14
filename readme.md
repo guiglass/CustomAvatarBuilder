@@ -29,19 +29,15 @@ Copy the entire folder:
 
 And paste it into the folder at the path:
 
-`C:\Users\[User]\AppData\LocalLow\Animation Prep Studios\AnimPrep\VR_MocapAssets`
-
-A copy/paste friendly version:
-
-`%USERPROFILE%\AppData\LocalLow\Animation Prep Studios\AnimationPrepStudio\VR_MocapAssets`
+`%USERPROFILE%\AppData\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite`
 
 ___
 ### Installing
 
-It is recommended to open this project using [Unity 2019](https://unity3d.com/unity/whats-new/2019.2.4 "Unity Engine Download").
-You will also require [Blender 2.79b](https://www.blender.org/download/previous-versions/ "Blender Download") to be installed.
+It is recommended to open this project using [Unity 2019.2.4f1](https://unity3d.com/unity/whats-new/2019.2.4 "Unity Engine Download").
+You will also require [Blender 2.79b](https://download.blender.org/release/Blender2.79/ "Blender Downloads") to be installed.
 
-Start Unity hub and navigate to this project, then select the `project` directory to start the scene.
+Start Unity hub and navigate to this project, then select the `project` directory to open the project. Then load `Builder.scene`
 
 ## License
 
