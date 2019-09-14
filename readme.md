@@ -17,14 +17,14 @@ Youtube tutorial on how to create custom avatars from Makehuman/Reallusion -> Bl
 ___
 Below is documentation describing some of the steps required to create and add custom avatars.
 
-![Test Image 4](https://raw.githubusercontent.com/guiglass/AvatarBuilder/master/Documentation/builder.png)
+![Test Image 4](https://raw.githubusercontent.com/guiglass/CustomAvatarBuilder/master/Documentation/builder.png)
 * First be sure that the `Blender Application` field points to the valid blender.exe installed on your PC ([version 2.79b](https://download.blender.org/release/Blender2.79/ "Blender Downloads")).
 * Then click the "Import Avatar Model" button to locate the .blend file containing the model you would like to import.
 
-![Test Image 4](https://raw.githubusercontent.com/guiglass/AvatarBuilder/master/Documentation/select.png)
+![Test Image 4](https://raw.githubusercontent.com/guiglass/CustomAvatarBuilder/master/Documentation/select.png)
 * The automation should do most of the work creating the assetbundle.
 
-![Test Image 4](https://raw.githubusercontent.com/guiglass/AvatarBuilder/master/Documentation/asset.png)
+![Test Image 4](https://raw.githubusercontent.com/guiglass/CustomAvatarBuilder/master/Documentation/asset.png)
 ___
 Copy the entire folder:
 
@@ -42,7 +42,7 @@ You will also require [Blender 2.79b](https://download.blender.org/release/Blend
 
 Start Unity hub and navigate to this project, then select the `project` directory to open the project. Then load `Builder.unity`
 
-![Test Image 4](https://raw.githubusercontent.com/guiglass/CustomPropBuilder/master/Documentation/scene.png)
+![Test Image 4](https://raw.githubusercontent.com/guiglass/CustomAvatarBuilder/master/Documentation/scene.png)
 
 ## License
 
