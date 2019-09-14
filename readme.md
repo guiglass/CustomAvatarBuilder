@@ -1,7 +1,7 @@
 # Animation Prep Studio (Avatar Builder) V2.0.2
 
 
-This project contains tools which help automate the process of converting .blend models into avatar assets compatible with [Animation Prep Studio](https://drive.google.com/open?id=17MyFQ75dfBuaf5IL4ba-4BH8klWj6-5r "Animation Prep Studio Direct Download"). The builder tool can import .blend files which were created using blender [version 2.79b](https://download.blender.org/release/Blender2.79/ "Blender Downloads"). After successful import there will be a new asset folder which you simply drag and drop into the `VR_MocapAssets` folder to make it available in the game.
+This project contains tools which help automate the process of converting .blend models into avatar assets compatible with [Animation Prep Studio (Lite)](https://drive.google.com/open?id=17MyFQ75dfBuaf5IL4ba-4BH8klWj6-5r "Animation Prep Studio Direct Download"). The builder tool can import .blend files which were created using blender [version 2.79b](https://download.blender.org/release/Blender2.79/ "Blender Downloads"). After successful import there will be a new asset folder which you simply drag and drop into the `VR_MocapAssets` folder to make it available in the game.
 
 Recently added Reallusion support!!
 
