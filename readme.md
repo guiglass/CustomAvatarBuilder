@@ -37,7 +37,7 @@ ___
 It is recommended to open this project using [Unity 2019.2.4f1](https://unity3d.com/unity/whats-new/2019.2.4 "Unity Engine Download").
 You will also require [Blender 2.79b](https://download.blender.org/release/Blender2.79/ "Blender Downloads") to be installed.
 
-Start Unity hub and navigate to this project, then select the `project` directory to open the project. Then load `Builder.scene`
+Start Unity hub and navigate to this project, then select the `project` directory to open the project. Then load `Builder.unity`
 
 ![Test Image 4](https://raw.githubusercontent.com/guiglass/CustomPropBuilder/master/Documentation/scene.png)
 
