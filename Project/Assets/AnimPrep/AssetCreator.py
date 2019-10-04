@@ -4,7 +4,7 @@ __author__ = "Grant Olsen"
 __copyright__ = "Copyright 2019, Animation Prep Studios"
 __credits__ = [""]
 __license__ = "GPL"
-__version__ = "2.0.1"
+__version__ = "2.0.2"
 __title__ = 'AnimPrep Asset Project Creator'
 import os, sys, json, time, pickle
 
@@ -101,6 +101,9 @@ for m in bpy.data.materials:
 	for i, slot in enumerate(m.texture_slots):
 
 		if slot is not None and hasattr(slot.texture, 'image'):
+			if slot.texture.image is None:
+				continue
+
 			filename = slot.texture.image.filepath #.encode('ascii','ignore').decode()  # the filename and extension of the image, strip dir info
 			filename = os.path.basename(filename.replace('//', ''))  # Extract file name from path
 
@@ -197,7 +200,7 @@ if armature is not None:
 	pose_bone.keyframe_insert(data_path="location")
 
 	#now search for any objects that are a child of a bone, but does not have any weightpainting (armature modifiers)
-	for obj in bpy.data.objects:
+	for obj in bpy.data.objects: #TODO use armature.children instead of the entire scene?
 		if obj.type == 'ARMATURE':
 			armature = obj
 			continue
@@ -497,7 +500,11 @@ bpy.ops.export_scene.fbx(
 )
 
 bpy.data.use_autopack = True
-bpy.ops.file.pack_all()
+
+try:
+	bpy.ops.file.pack_all()
+except Exception as e:
+	print(e)
 
 bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
 print("\nSaved Done!")
@@ -1095,37 +1102,59 @@ def ProcessModelFile(context, filepath, blenderpath, LogMessage):
 	basename_extension=os.path.basename(filepath)
 	basename=os.path.splitext(basename_extension)[0]
 
+
 	source_directory = os.path.dirname(filepath)# os.path.dirname(os.path.realpath(__file__))
+
 	dest_directory = os.path.join(source_directory, basename.lower() + "_%s" % context.tkvar.get().lower() )
 
+	if not os.path.exists(dest_directory): #if the user's upload folder exists (normally should not exist)
+		os.makedirs(dest_directory) #create the user's uplaod folder
+		LogMessage("CREATED DIRECTORY: " + dest_directory)
+	else:
+		LogMessage("Directory %s already exists??" % dest_directory, 'warning')
+
+	LogMessage("Copying .blend character to project directory.")
+
+
+	filepathcopy = os.path.join(dest_directory, basename_extension) #change to the copied file
+	copyfile(filepath, filepathcopy)
+
+
+	LogMessage("Attempting to copy textures from source directoy")
+	textures_directory = os.path.join(dest_directory, "textures")
+	source_textures_directory = os.path.join(source_directory, "textures")
+
+	if os.path.isdir(source_textures_directory):
+		LogMessage("Found some source textures, copying folder now.")
+		#copy_tree (source_textures_directory, textures_directory)
+		os.makedirs(os.path.dirname(textures_directory + r"\\"), exist_ok=True) #do not raise the target directory already exists error
+
+		src_files = os.listdir(source_textures_directory)
+		for file_name in src_files:
+		    full_file_name = os.path.join(source_textures_directory, file_name)
+		    if os.path.isfile(full_file_name):
+		        shutil.copy(full_file_name, textures_directory)
+
+	else:
+		LogMessage("Could not find a \"Textures\" directory for this model.", 'warning')
+
+	LogMessage("Running blenderscript.py to build export data.")
 	try:
 		temp_dir = mkdtemp()
 
-		if not os.path.exists(temp_dir): #if the user's upload folder exists (normally should not exist)
-			os.makedirs(temp_dir) #create the user's uplaod folder
-			LogMessage("CREATED DIRECTORY: " + temp_dir)
-		else:
-			LogMessage("Directory %s already exists??" % temp_dir, 'warning')
-
-		LogMessage("Copying .blend character to project directory.")
-
-		filepathcopy = os.path.join(temp_dir, basename_extension) #change to the copied file
-		copyfile(filepath, filepathcopy)
-
-
-		#temp_dir = mkdtemp()
 		tempfilepath = os.path.join(temp_dir, "blenderscript.py ")
 
 		tempfile = open(tempfilepath, "w")
+
 
 		blenderScriptText = blenderscript_nodes + context.get_blendscript()
 
 		tempfile.write(blenderScriptText)
 		tempfile.close()
 
-		copyfile(filepath, filepathcopy) #move a copy of the .blend into a temp directory for processing
+		LogMessage(tempfilepath, 'stdout')
 
-		LogMessage("Running blenderscript.py to build export data.")
+
 		out = subprocess.check_output([
 			blenderpath,
 			filepathcopy,
@@ -1153,29 +1182,9 @@ def ProcessModelFile(context, filepath, blenderpath, LogMessage):
 		raise
 	finally:
 		#os.rmdir(temp_dir) #note that rmdir fails unless it's empty, which is why rmtree is so convenient:
-		if (os.path.exists(dest_directory)): #if this avatar has been processed before, a directory may still exists with old processing files
-			shutil.rmtree(dest_directory)# remove everything
-
-		shutil.move(temp_dir, dest_directory) #move the temp files to a processing folder located next to the original .blend file
-		#shutil.rmtree(temp_dir)# remove everything
+		shutil.rmtree(temp_dir)# remove everything
 		pass
 
-	LogMessage("Attempting to copy textures from source directoy")
-	textures_directory = os.path.join(dest_directory, "textures")
-	source_textures_directory = os.path.join(source_directory, "textures")
-
-	if os.path.isdir(source_textures_directory):
-		LogMessage("Found some source textures, copying folder now.")
-		#copy_tree (source_textures_directory, textures_directory)
-		os.makedirs(os.path.dirname(textures_directory + r"\\"), exist_ok=True) #do not raise the target directory already exists error
-
-		src_files = os.listdir(source_textures_directory)
-		for file_name in src_files:
-			full_file_name = os.path.join(source_textures_directory, file_name)
-			if os.path.isfile(full_file_name):
-				shutil.copy(full_file_name, textures_directory )
-	else:
-		LogMessage("Could not find a \"Textures\" directory for this model.", 'warning')
 
 
 	blender_json_path = os.path.join(dest_directory, "blender.json")

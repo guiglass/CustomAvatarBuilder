@@ -18,7 +18,7 @@ using System.Threading;
 	static void Init()
 	{
 		AnimPrepAssetBuilder window = (AnimPrepAssetBuilder)GetWindow(typeof(AnimPrepAssetBuilder));
-		window.maxSize = new Vector2(300f, 300f);
+		window.maxSize = new Vector2(300f, 335f);
 		window.minSize = window.maxSize;
 
 	}
@@ -75,7 +75,7 @@ using System.Threading;
         customLabel.normal.textColor = new Color(0.5f, 0.5f, 0.5f);
         customLabel.fontStyle = FontStyle.Bold;
 
-        GUILayout.Label("Version: 2.0.1 (Lite) ", customLabel);
+        GUILayout.Label(string.Format("Version: {0} (Lite)", Application.version), customLabel);
 
         EditorGUILayout.EndVertical();
 
@@ -98,7 +98,7 @@ using System.Threading;
                     EditorUtility.DisplayDialog("Warning",
                          string.Format(
                              "Your OS is: \"{0}\" which may experience issues with long paths." +
-                             "\n\nIt would be wise to move this AvatarBuilder project as close to \"C:\\\" as possible." +
+                             "\n\nIt would be wise to move this Builder project as close to \"C:\\\" as possible." +
                              "\n\nCurrent application datapath:\n{1}", 
                              SystemInfo.operatingSystem, Application.dataPath
                              ),
@@ -149,8 +149,9 @@ using System.Threading;
 					"Please browse for and select the installed Blender application. Must be version 2.79b.", "OK");
 				return;
 			}
+            PlayerSettings.colorSpace = ColorSpace.Linear;
 
-			AssetDatabase.RemoveUnusedAssetBundleNames ();
+            AssetDatabase.RemoveUnusedAssetBundleNames ();
 
 			var modelPath = EditorUtility.OpenFilePanel(string.Format("Load {0} model", getCharacterTypesArray[characterType].ToLower() ), modelPathLast, "blend");
 
@@ -221,18 +222,23 @@ using System.Threading;
 				}
 
 				//Copy all images files
-				string[] extensions = new[] { ".png", ".jpg", ".tiff", ".bmp" };
+				var textures_path = Path.Combine(uploadFolder, "textures");
+				if (Directory.Exists(textures_path))
+				{
+					string[] extensions = new[] { ".png", ".jpg", ".tiff", ".bmp" };
+				
+					DirectoryInfo dir_images = new DirectoryInfo (textures_path);
 
-				DirectoryInfo dir_images = new DirectoryInfo (Path.Combine (uploadFolder, "textures"));
+					FileInfo[] texturesInfo =
+						dir_images.GetFiles()
+							.Where(f => extensions.Contains(f.Extension.ToLower()))
+							.ToArray();
 
-				FileInfo[] texturesInfo =
-					dir_images.GetFiles ()
-						.Where (f => extensions.Contains (f.Extension.ToLower ()))
-						.ToArray ();
-
-				foreach (FileInfo f in texturesInfo) {
-					var to = Path.Combine (processingPath, f.Name);
-					FileUtil.CopyFileOrDirectory (f.FullName, to);
+					foreach (FileInfo f in texturesInfo)
+					{
+						var to = Path.Combine(processingPath, f.Name);
+						FileUtil.CopyFileOrDirectory(f.FullName, to);
+					}
 				}
 
 				AnimPrepAssetPostprocessor.AssetBundleUserJson userPrefs = new AnimPrepAssetPostprocessor.AssetBundleUserJson () {
