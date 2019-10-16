@@ -4,7 +4,7 @@ Contains features that help automate the process of converting .blend models int
 And have a compatible skeleton heirachy.
 
 |   Skeletons   |   Supported   |
-| ------------- | ------------- |
+| :-------------: | :-------------: |
 |   Makehuman   |     Yes       |
 |   CC3         |     Yes       |
 
