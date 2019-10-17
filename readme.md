@@ -10,11 +10,11 @@ Contains features that help automate the process of converting .blend models int
 
 ___
 
-Upon pressing "Import Avatar Model" button and choosing a .blend file the CustomAvatarBuilder will begin processing the model contained in the selected .blend file. Once successfully created a new **Avatar Asset** folder will be available for copy/paste into the mocap tool. Simply drag and drop the new asset folder to the `VR_MocapAssets` folder located at:
+Upon pressing "Import Avatar Model" button and choosing a .blend file the CustomAvatarBuilder will begin processing the model contained in the selected .blend file. Once the CustomAvatarBuilder finishes building the new **Avatar Asset** a folder will be displayed that you can copy and paste into the `VR_MocapAssets` folder located at:
 
 `%USERPROFILE%\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite\VR_MocapAssets`
 
-The avatar should now available and ready for motion capture by selecte in in the Avatar Browser menu of Animation Prep Studio (Lite).
+The avatar would then be available for motion capture by selecte it from the Avatar Browser menu in Animation Prep Studio (Lite).
 ___
 Youtube tutorial on how to create custom avatars from Makehuman/Reallusion -> Blender characters:
 ## Getting Started Reallusion:
