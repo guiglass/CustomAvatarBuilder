@@ -16,12 +16,12 @@ Upon pressing "Import Avatar Model" button and choosing a .blend file the Custom
 
 The avatar would then be available for motion capture by selecting it from the Avatar Browser list in Animation Prep Studio (Lite).
 ___
-Youtube tutorial on how to create custom avatars from Makehuman/Reallusion -> Blender characters:
-## Getting Started Reallusion:
-[![Youtube Tutorial](https://img.youtube.com/vi/US4zInM82EM/0.jpg)](https://www.youtube.com/watch?v=US4zInM82EM)
-
-## Getting Started Makehuman:
+Youtube tutorial on how to create custom avatars:
+## Makehuman:
 [![Youtube Tutorial](https://img.youtube.com/vi/gRIz8tc7ds8/0.jpg)](https://www.youtube.com/watch?v=gRIz8tc7ds8)
+
+## CC3:
+[![Youtube Tutorial](https://img.youtube.com/vi/US4zInM82EM/0.jpg)](https://www.youtube.com/watch?v=US4zInM82EM)
 
 ___
 Below is documentation describing some of the steps required to create and add custom avatars.
