@@ -14,7 +14,7 @@ Upon pressing "Import Avatar Model" button and choosing a .blend file the Custom
 
 `%USERPROFILE%\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite\VR_MocapAssets`
 
-The avatar would then be available for motion capture by selecte it from the Avatar Browser menu in Animation Prep Studio (Lite).
+The avatar would then be available for motion capture by selecting it from the Avatar Browser menu in Animation Prep Studio (Lite).
 ___
 Youtube tutorial on how to create custom avatars from Makehuman/Reallusion -> Blender characters:
 ## Getting Started Reallusion:
