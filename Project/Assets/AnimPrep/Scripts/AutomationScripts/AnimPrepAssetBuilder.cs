@@ -1,18 +1,20 @@
-﻿#if UNITY_EDITOR
+﻿using System;
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
 using System.IO;
-using System.Threading;
 
-[ExecuteInEditMode] public class AnimPrepAssetBuilder : EditorWindow {
-
+[ExecuteInEditMode] public class AnimPrepAssetBuilder : EditorWindow 
+{
+	public static string BUILDER_VERSION = "2.2.1";
+	
 	[Header("References")]
 
 	Texture2D logotex;
 
 	public static string[] getCharacterTypesArray = System.Enum.GetNames(typeof(ArmatureLinker.CharacterType));
-
+	
 	//============================================
 	[MenuItem("AnimPrep/Avatar Importer")]
 	static void Init()
@@ -39,7 +41,17 @@ using System.Threading;
 		CheckBlenderAppExists ();
 	}
 
-
+	void FixPlayerSettings()
+	{
+		PlayerSettings.colorSpace = ColorSpace.Linear;
+		PlayerSettings.virtualRealitySupported = true;
+		PlayerSettings.SetVirtualRealitySDKs(BuildTargetGroup.Standalone, new string[] { "OpenVR", } );
+		PlayerSettings.stereoRenderingPath = StereoRenderingPath.SinglePass;
+		PlayerSettings.companyName = "Animation Prep Studios";
+		PlayerSettings.productName = "Avatar Builder";
+		PlayerSettings.bundleVersion = BUILDER_VERSION;
+	}
+	
 	string modelPathLast = "";
 	const string blenderAppPathDefault = "C:\\Program Files\\Blender Foundation\\Blender\\blender.exe";
 	string blenderAppPath = blenderAppPathDefault;
@@ -48,7 +60,57 @@ using System.Threading;
 
 	int characterType = 0;
 
-    void OnGUI()
+	
+	
+	
+		
+
+	[Serializable]
+	public struct UserPrefs 
+	{ //these refer to the JSON key/value pair which assiociates user settings with previously loaded avatars
+		public float knees_rotation;
+		public float feet_spacing;
+	}
+
+	[Serializable]
+	public class Wrapper<T>
+	{
+		public MocapFileHeaderParameters Params;
+		public T[] Indexes; //the file index information that links trackers/bones to the respective file line index
+	}
+	
+	public static Wrapper<T> FromJson<T>(string json) {
+		return UnityEngine.JsonUtility.FromJson<Wrapper<T>>(json);
+	}
+	
+	protected static string ToJson<T>(T[] t)
+	{
+		Wrapper<T> wrapper = new Wrapper<T>();
+
+		wrapper.Params = new MocapFileHeaderParameters()
+		{
+			//model = _armature.defaultModel,// VaptureTrackerLinker.Instance.mocapRig.retrackingFrames.fileParams.model,
+
+			//fps = VaptureRecorder.fps, //the frames per second this animation was recorded at
+		};
+
+		wrapper.Indexes = t; //the main indexes for each tracker/bone
+		return UnityEngine.JsonUtility.ToJson(wrapper);
+	}
+
+	[Serializable]
+	public struct MocapFileHeaderParameters
+	{
+		//these refer to the JSON key/value pair which assiociates retrackers to their respective file line index position
+		public string model; //the name of the asset bundle (aka model) this file is for
+		public string path; //the directory folder name where the animation data is contained
+
+	}
+
+
+
+
+	void OnGUI()
     {
 
         var customButton = new GUIStyle("Button");
@@ -75,7 +137,7 @@ using System.Threading;
         customLabel.normal.textColor = new Color(0.5f, 0.5f, 0.5f);
         customLabel.fontStyle = FontStyle.Bold;
 
-        GUILayout.Label(string.Format("Version: {0} (Lite)", Application.version), customLabel);
+        GUILayout.Label(string.Format("Version: {0} (Lite)", BUILDER_VERSION/*Application.version*/), customLabel);
 
         EditorGUILayout.EndVertical();
 
@@ -130,13 +192,16 @@ using System.Threading;
 		customLabel.fontSize = 14;
 		customLabel.normal.textColor = new Color(0.0f,0.0f,1.0f);
 		customLabel.fontStyle = FontStyle.Bold;
-
-
-		if (GUILayout.Button("Import Avatar Model", customLabel)) {
-
+		
+		if (GUILayout.Button(new GUIContent("Import Avatar Model", "Select .blend files containing valid models. Processes the model to generate a custom assetbundle compatible with AnimationPrepStudio runtime."), customLabel))
+		{
+			//WriteLineToFile(fs_retrack, ToJson(m_mocapRig, retrackerFileHeaderIndexs, fingerFileHeaderIndexs)); //Add the JSON header as the very first line
+			//return;
+			
+			
 			if (characterType == (int)ArmatureLinker.CharacterType.DEFAULT) {
 				var enumName = System.Enum.GetName (typeof(ArmatureLinker.CharacterType), ArmatureLinker.CharacterType.DEFAULT);
-				Debug.LogError (string.Format("You must specify a character type (\"{0}\" is not a valid selection)", enumName));
+				Debug.LogWarning(string.Format("You must specify a character type (\"{0}\" is not a valid selection)", enumName));
 				EditorUtility.DisplayDialog("Error",
 					string.Format("Character type: \"{0}\" is not a valid selection!\n\nPlease select a desired character type first.", enumName),
 					"Ok");
@@ -149,14 +214,64 @@ using System.Threading;
 					"Please browse for and select the installed Blender application. Must be version 2.79b.", "OK");
 				return;
 			}
-            PlayerSettings.colorSpace = ColorSpace.Linear;
 
+			FixPlayerSettings();
+			
             AssetDatabase.RemoveUnusedAssetBundleNames ();
 
 			var modelPath = EditorUtility.OpenFilePanel(string.Format("Load {0} model", getCharacterTypesArray[characterType].ToLower() ), modelPathLast, "blend");
 
 			if (!string.IsNullOrEmpty (modelPath)) {
+				
+				GameObject templateObject = null;
 
+				switch ((ArmatureLinker.CharacterType)characterType) {
+					case ArmatureLinker.CharacterType.DAZ3D_G3:
+						templateObject = Resources.Load<GameObject> ("Pose_Daz3D_G3");
+						break;
+					case ArmatureLinker.CharacterType.DAZ3D_G2:
+						templateObject = Resources.Load<GameObject> ("Pose_Daz3D_G2");
+						break;
+					case ArmatureLinker.CharacterType.MIXAMO:
+						templateObject = Resources.Load<GameObject> ("Pose_Mixamo");
+						break;
+					case ArmatureLinker.CharacterType.CC3:
+						templateObject = Resources.Load<GameObject> ("Pose_CC3");
+						break;
+					case ArmatureLinker.CharacterType.MAKEHUMAN:
+					case ArmatureLinker.CharacterType.DEFAULT:
+						templateObject = Resources.Load<GameObject> ("Pose_Makehuman");
+						break;
+					default:
+						Debug.LogError ("Non-templateType detected - Filename must begin with a skeleton template type!");
+						return;
+				}
+
+				var skeletonPath = Path.Combine(Path.GetDirectoryName(modelPath), "skeleton.csv");
+				if (File.Exists(skeletonPath))
+					File.Delete(skeletonPath);
+
+				using (StreamWriter sw = File.AppendText(skeletonPath)) 
+				{
+					var children = templateObject.GetComponentsInChildren<Transform>();
+					
+					for (int i = 1; i < children.Length; i++)
+					{
+						var child = children[i].transform;
+						sw.WriteLine(String.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8}",
+							child.name,
+							child.parent.name,
+							child.localPosition.x.ToString("F8"),
+							child.localPosition.y.ToString("F8"),
+							child.localPosition.z.ToString("F8"),
+							child.localRotation.x.ToString("F8"),
+							child.localRotation.y.ToString("F8"),
+							child.localRotation.z.ToString("F8"),
+							child.localRotation.w.ToString("F8")
+						));
+					}
+				}
+				
 				modelPathLast = Path.GetDirectoryName(modelPath);
 				if (Path.GetExtension (modelPath).Equals (".blend")) {
 					if (!RunBatch (AnimPrepAssetPostprocessor.AssetBundleVariant, modelPath, blenderAppPath)) {
@@ -243,7 +358,7 @@ using System.Threading;
 
 				AnimPrepAssetPostprocessor.AssetBundleUserJson userPrefs = new AnimPrepAssetPostprocessor.AssetBundleUserJson () {
 					created = System.DateTime.UtcNow,
-					variantTag = getCharacterTypesArray[characterType],//use the index of the users selection to get then enum name from the chracter types //  AnimPrepAssetPostprocessor.ReallusionAssetVariantTag,
+					variantTag = getCharacterTypesArray[characterType],//use the index of the users selection to get then enum name from the chracter types
 					//user = userName,
 					//uploadFolder = uploadName,
 					characterFolder = Path.GetDirectoryName(modelPath)
@@ -268,7 +383,9 @@ using System.Threading;
 		GUILayout.BeginHorizontal();
 
 
-		characterType = EditorGUILayout.Popup("Character Type:", characterType, getCharacterTypesArray, GUILayout.MinWidth (100)); 
+		
+		
+		characterType = EditorGUILayout.Popup(new GUIContent("Character Type:", "This must match the type of skeleton that the character model was created with."), characterType, getCharacterTypesArray, GUILayout.MinWidth (100)); 
 
 
 		GUILayout.EndHorizontal();
@@ -284,8 +401,10 @@ using System.Threading;
 		customLabel.fontStyle = FontStyle.Bold;
 
 		EditorGUILayout.LabelField("Save changes to assetbundles:");
-		if (GUILayout.Button("Re-Build Assetbundles", customLabel)) {
+		if (GUILayout.Button(new GUIContent("Re-Build Assetbundles", "After making any changes to avatars, this will update the changes to the local assetbundle files."), customLabel)) {
 
+			FixPlayerSettings();
+			
 			var allPaths = AssetDatabase.GetAllAssetPaths ();
 			foreach (var assetPath in allPaths) {
 				if (assetPath.StartsWith(AnimPrepAssetPostprocessor.prefabsFolder)) {
@@ -322,7 +441,14 @@ using System.Threading;
 					RendererShaderParams.StoreAllRenderers (go);
 
                     //PrefabUtility.ReplacePrefab(go, PrefabUtility.GetPrefabParent(go), ReplacePrefabOptions.ConnectToPrefab);
-                    PrefabUtility.SaveAsPrefabAssetAndConnect(go, PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go), InteractionMode.AutomatedAction);
+                    try
+                    {
+	                    PrefabUtility.SaveAsPrefabAssetAndConnect(go, PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go), InteractionMode.AutomatedAction);
+                    }
+                    catch (Exception e)
+                    {
+	                    Debug.LogWarning(e.Message); //Ensure all assets will be processed. Ignores error: "Given path is not valid: 'Assets/Resources/armature_something.fbx"
+                    }
 				}
 			}
 
@@ -346,7 +472,8 @@ using System.Threading;
 
 		EditorGUILayout.LabelField("Add processed models to scene:");
 
-		if (GUILayout.Button("Append Prefabs To Scene", customLabel))	{
+
+		if (GUILayout.Button(new GUIContent("Append Prefabs To Scene", "Places all prefabs into the current scene."), customLabel))	{
 
 			//Vector3 offsetSpacing = Vector3.right * 1.5f;
 
@@ -373,7 +500,7 @@ using System.Threading;
 
                     if (isPrefabInstance) {
                         //Object parentObject = EditorUtility.GetPrefabParent(go);
-                        Object parentObject = PrefabUtility.GetCorrespondingObjectFromSource(go);
+                        UnityEngine.Object parentObject = PrefabUtility.GetCorrespondingObjectFromSource(go);
 						string path = AssetDatabase.GetAssetPath(parentObject); 
 
 						if (assetPath.Equals (path)) {
@@ -408,11 +535,18 @@ using System.Threading;
 		customLabel.normal.textColor = new Color(0.2f,0.2f,0.2f);
 		customLabel.fontStyle = FontStyle.Italic;
 
-		EditorGUILayout.LabelField("Show folder containing output files:");
-		if (GUILayout.Button ("Open Assetbundles Folder", customLabel)) {
+		EditorGUILayout.LabelField("Show folder containing asset files:");
+		GUILayout.BeginHorizontal();
+		
+		if (GUILayout.Button (new GUIContent("Assetbundles", "Opens the folder containing the newly created Assetbundle files."), customLabel)) {
 			ShowAssetBundlesExplorer ();
 		}
 
+		customLabel.normal.textColor = new Color(1.0f,0.2f,0.2f);
+		if (GUILayout.Button (new GUIContent("VR_MocapAssets", "This is the destination folder where you should copy Assetbundles to for them to be included in AnimationPrepStudio runtime."), customLabel)) {
+			ShowMocapAssetsExplorer ();
+		}
+		GUILayout.EndHorizontal();
 
 		EditorGUILayout.Space();
 
@@ -455,7 +589,7 @@ using System.Threading;
 		customLabel.fixedWidth = 100;
 
 		blenderAppPath = GUILayout.TextField(blenderAppPath, GUILayout.MinWidth (0));
-		if (GUILayout.Button ("Browse", customLabel)) {
+		if (GUILayout.Button (new GUIContent("Browse", "Select a valid Blender v2.79b installation path by locating and selecting the \"blender.exe\" runtime application file."), customLabel)) {
 			string modelPath = EditorUtility.OpenFilePanel("Blender Application (v2.79b)", Path.GetDirectoryName(blenderAppPath), "exe");
 			if (!string.IsNullOrEmpty (modelPath)) {
 				blenderAppPath = modelPath;
@@ -488,11 +622,18 @@ using System.Threading;
 		//ShowExplorer ( Application.dataPath + Path.Combine("/../", AnimPrepAssetPostprocessor.assetBundlesFolder));
         ShowExplorer(Application.dataPath + Path.Combine(string.Format("{0}..{0}", Path.DirectorySeparatorChar), AnimPrepAssetPostprocessor.assetBundlesFolder));
     }
-
-
+	
+	public static void ShowMocapAssetsExplorer()
+	{
+		ShowExplorer(
+			Environment.ExpandEnvironmentVariables(
+				string.Format("%userprofile%{0}appdata{0}localLow{0}Animation Prep Studios{0}AnimationPrepStudio_Lite{0}VR_MocapAssets{0}", Path.DirectorySeparatorChar)
+			));
+	}
+	
 	public static void ShowExplorer(string itemPath)
 	{
-        Debug.Log("ShowExplorer itemPath " + itemPath);
+		Debug.Log(itemPath);
 		//itemPath = itemPath.Replace (@"/", @"\");//  @"\");   // explorer doesn't like front slashes
 		System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo() {
 			FileName = itemPath,

@@ -3,6 +3,37 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+#if UNITY_EDITOR
+using UnityEditor;
+[CustomEditor(typeof(ArmatureLinker))]
+[CanEditMultipleObjects]
+public class ArmatureLinkerEditor : Editor 
+{
+
+
+	public override void OnInspectorGUI()
+	{
+
+		DrawDefaultInspector();
+		
+		ArmatureLinker builder = (ArmatureLinker)FindObjectOfType(typeof(ArmatureLinker));
+		GUILayout.Space(100);
+		if (GUILayout.Button("Delete This Character"))
+		{
+
+			var prefab = PrefabUtility.FindPrefabRoot(builder.gameObject);
+			string myPath = AssetDatabase.GetAssetPath( builder.gameObject );
+			Debug.Log(myPath);
+			AssetDatabase.DeleteAsset(myPath);
+			Debug.Log(prefab);
+		}
+		GUILayout.Space(100);
+		
+
+	}
+}
+#endif
+
 public static class TransformDeepChildExtension
 {
 	//Breadth-first search
@@ -24,11 +55,14 @@ public static class TransformDeepChildExtension
 
 public class ArmatureLinker : MonoBehaviour
 {
-
+	
 	public enum CharacterType {
 		DEFAULT,
-		REALLUSION,
-		MAKEHUMAN
+		CC3,
+		MAKEHUMAN,
+		MIXAMO,
+		DAZ3D_G2,
+		DAZ3D_G3,
 	};
 	public CharacterType characterType = CharacterType.DEFAULT;
 
@@ -196,19 +230,36 @@ public class ArmatureLinker : MonoBehaviour
 		Transform _breastL;
 		Transform _breastR;
 
-		switch (characterType) {
-		case ArmatureLinker.CharacterType.REALLUSION:
-			_breastL = chest.FindDeepChild ("CC_Base_L_Breast"); //From reallusion default skeleton
+		switch (characterType) { 
+		case ArmatureLinker.CharacterType.DAZ3D_G2:
+		case ArmatureLinker.CharacterType.DAZ3D_G3:
+			_breastL = chest.FindDeepChild ("lPectoral"); //From DAZ default skeleton
 			if (_breastL != null) {
 				breastL = _breastL;
 			}
 
-			_breastR = chest.FindDeepChild ("CC_Base_R_Breast"); //From reallusion default skeleton
+			_breastR = chest.FindDeepChild ("rPectoral"); //From DAZ default skeleton
+			if (_breastR != null) {
+				breastR = _breastR;
+			}
+
+			faceRenderersParams = faceRenderersParams_Daz3D;
+			break;
+		case ArmatureLinker.CharacterType.MIXAMO:
+			faceRenderersParams = faceRenderersParams_Mixamo;
+			break;
+		case ArmatureLinker.CharacterType.CC3:
+			_breastL = chest.FindDeepChild ("L_Breast"); //From CC3 default skeleton
+			if (_breastL != null) {
+				breastL = _breastL;
+			}
+
+			_breastR = chest.FindDeepChild ("R_Breast"); //From CC3 default skeleton
 			if (_breastR != null) {
 				breastR = _breastR;
 			}
 				
-			faceRenderersParams = faceRenderersParams_Reallusion;
+			faceRenderersParams = faceRenderersParams_CC3;
 			break;
 		case ArmatureLinker.CharacterType.MAKEHUMAN:
 		case ArmatureLinker.CharacterType.DEFAULT:
@@ -244,10 +295,38 @@ public class ArmatureLinker : MonoBehaviour
 		ApplyFaceController (avatarMesh, faceRenderersParams);
 
 	}
+	//DAZ facerig (and weights are for vocalizer expressions)
+	public static BlendShapeParams[] faceRenderersParams_Daz3D = new BlendShapeParams[] {
+	
+	};
 
 
-	//This is a Reallusion default facerig (and weights are for vocalizer expressions)
-	public static BlendShapeParams[] faceRenderersParams_Reallusion /*= new BlendShapeParams[]{};*/ = new BlendShapeParams[] {
+	//Mixamo facerig (and weights are for vocalizer expressions)
+	public static BlendShapeParams[] faceRenderersParams_Mixamo = new BlendShapeParams[] {
+		new BlendShapeParams() {shapeName = "BrowsDown_Left", shapeWeight = 2.5f},
+		new BlendShapeParams() {shapeName = "BrowsDown_Right", shapeWeight = 2.5f},
+	
+		new BlendShapeParams() {shapeName = "Squint_Left", shapeWeight = 2.0f},
+		new BlendShapeParams() {shapeName = "Squint_Right", shapeWeight = 2.0f},
+	
+		new BlendShapeParams() {shapeName = "CheekPuff_Left", shapeWeight = 0.8f},
+		new BlendShapeParams() {shapeName = "CheekPuff_Right", shapeWeight = 0.8f},
+		
+		new BlendShapeParams() {shapeName = "Smile_Left",  shapeWeight = 5.0f},
+		new BlendShapeParams() {shapeName = "Smile_Right", shapeWeight = 5.0f},
+	
+		new BlendShapeParams() {shapeName = "MouthWhistle_NarrowAdjust_Left", shapeWeight = 2.0f},
+		new BlendShapeParams() {shapeName = "MouthWhistle_NarrowAdjust_Right", shapeWeight = 2.0f},
+
+		new BlendShapeParams() {shapeName = "LowerLipDown_Left", shapeWeight = 2.0f},
+		new BlendShapeParams() {shapeName = "LowerLipDown_Right", shapeWeight = 2.0f},
+		
+		new BlendShapeParams() {shapeName = "UpperLipUp_Left", shapeWeight = 1.0f},
+		new BlendShapeParams() {shapeName = "UpperLipUp_Right", shapeWeight = 1.0f},
+	};
+
+	//CC3 facerig (and weights are for vocalizer expressions)
+	public static BlendShapeParams[] faceRenderersParams_CC3 = new BlendShapeParams[] {
 		new BlendShapeParams() {shapeName = "Brow_Drop_L", shapeWeight = 2.5f},
 		new BlendShapeParams() {shapeName = "Brow_Drop_R", shapeWeight = 2.5f},
 	
@@ -269,8 +348,8 @@ public class ArmatureLinker : MonoBehaviour
 	
 	
 	
-	//This is a MakeHuman default facerig (and weights are for vocalizer expressions)
-	public static BlendShapeParams[] faceRenderersParams_MakeHuman /*= new BlendShapeParams[]{};*/ = new BlendShapeParams[] {
+	//MakeHuman facerig (and weights are for vocalizer expressions)
+	public static BlendShapeParams[] faceRenderersParams_MakeHuman = new BlendShapeParams[] {
 		new BlendShapeParams() {shapeName = "brow_mid_down_left",    shapeWeight = 2.5f},
 		new BlendShapeParams() {shapeName = "brow_mid_down_right",   shapeWeight = 2.5f},
 	

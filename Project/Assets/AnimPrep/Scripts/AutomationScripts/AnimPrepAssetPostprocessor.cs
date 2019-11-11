@@ -60,6 +60,7 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 		public float alpha;
 		public bool use_transparency;
 
+		public BlenderColorJson diffuse_color;
 		public float diffuse_intensity;
 		public float specular_intensity;
 		public float specular_hardness;
@@ -92,8 +93,11 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 
 	public const string AssetBundleVariant = "avatar"; //the name given to the files created by AnimPrep.exe
 
+	public const string Daz3DG2AssetVariantTag = "DAZ3D_G2";
+	public const string Daz3DG3AssetVariantTag = "DAZ3D_G3";
 	public const string MakehumanAssetVariantTag = "MAKEHUMAN";
-	public const string ReallusionAssetVariantTag = "REALLUSION";
+	public const string CC3AssetVariantTag = "CC3";
+	public const string MixamoAssetVariantTag = "MIXAMO";
 
     //public static string assetBundlesFolder = "Assets/AssetBundles";
     public static string assetBundlesFolder { get { return String.Format("Assets{0}AssetBundles", Path.DirectorySeparatorChar); } }
@@ -183,19 +187,6 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 			}
 
 
-			/*switch (templateType) {
-			case ReallusionAssetVariantTag:
-				importer.userData = importer.userData + " " + ReallusionAssetVariantTag;
-				break;
-			case AssetBundleVariant:
-			case MakehumanAssetVariantTag:
-				importer.userData = importer.userData + " " + MakehumanAssetVariantTag;
-				break;
-			default:
-				Debug.LogError ("Non-templateType detected - Filename must begine with a skeleton template type!");
-				return;
-			}*/
-
 			importer.isReadable = true;
 
 			importer.importAnimation = true;
@@ -220,8 +211,8 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 
 
 
-	//This is a Reallusion default facerig (and weights are for vocalizer expressions)
-	public ArmatureLinker.BlendShapeParams[] faceRenderersParams_Reallusion /*= new BlendShapeParams[]{};*/ = new ArmatureLinker.BlendShapeParams[] {
+	//This is a CC3 default facerig (and weights are for vocalizer expressions)
+	public ArmatureLinker.BlendShapeParams[] faceRenderersParams_CC3 = {
 		new ArmatureLinker.BlendShapeParams() {shapeName = "Brow_Drop_L", shapeWeight = 2.5f},
 		new ArmatureLinker.BlendShapeParams() {shapeName = "Brow_Drop_R", shapeWeight = 2.5f},
 
@@ -243,7 +234,7 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 
 
 	//This is a MakeHuman default facerig (and weights are for vocalizer expressions)
-	public ArmatureLinker.BlendShapeParams[] faceRenderersParams_MakeHuman /*= new BlendShapeParams[]{};*/ = new ArmatureLinker.BlendShapeParams[] {
+	public ArmatureLinker.BlendShapeParams[] faceRenderersParams_MakeHuman = {
 		new ArmatureLinker.BlendShapeParams() {shapeName = "brow_mid_down_left",    shapeWeight = 2.5f},
 		new ArmatureLinker.BlendShapeParams() {shapeName = "brow_mid_down_right",   shapeWeight = 2.5f},
 
@@ -273,7 +264,8 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 	static Func<string, string, HumanBone> Bone = (humanName, boneName) => new HumanBone() {humanName = humanName, boneName = boneName};
 	static Func<string, Vector3, Quaternion, Vector3, SkeletonBone> Skel = (name, position, rotation, scale) => new SkeletonBone() {name = name, position = position, rotation = rotation, scale = scale};
 
-	static string[] makehumanTemplateOverrideBoneNames = new string[] {
+	static readonly string[] MakehumanTemplateOverrideBoneNames = new string[] 
+	{
 		//"jaw",          
 		//"eye.L",        
 		//"eye.R",        
@@ -338,8 +330,8 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 		//"upperleg01.L", 
 	};
 
-	static string[] reallusionTemplateOverrideBoneNames = new string[] { 
-
+	static readonly string[] CC3TemplateOverrideBoneNames = new string[] 
+	{ 
 		"CC_Base_R_Index1",  
 		"CC_Base_R_Index2",  
 		"CC_Base_R_Index3",  
@@ -388,68 +380,173 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 		"CC_Base_L_Upperarm", 
 	};
 
-	static void FixCharacterBones(GameObject modelAsset, SkeletonBone[] skelBones, HumanDescription humanDescription, string[] templateOverrideBoneNames ) {
+	private static readonly string[] MixamoTemplateOverrideBoneNames = new string[]
+	{
+
+	};
+
+	private static readonly string[] Daz3DG2TemplateOverrideBoneNames = new string[]
+	{
+
+	};
+	
+	private static readonly string[] Daz3DG3TemplateOverrideBoneNames = new string[]
+	{
+
+	};
+
+	static bool FixMissingBoneTransforms(GameObject modelAsset, GameObject templateObject)
+	{
+		var allBonesExist = true;
+		
+		var templateChildren = templateObject.GetComponentsInChildren<Transform>();
+		for (int i = 1; i < templateChildren.Length; i++)
+		{
+			var templateBone = templateChildren[i];
+			//for each child bone in the template avatar skeleton
+			if (modelAsset != null)
+			{
+				var actualBone = modelAsset.transform.FindDeepChild(templateBone.name);
+				//Attempt to add any missing bones so the human description will be valid (for reference only)
+				if (actualBone == null)
+				{
+					allBonesExist = false;
+					if (templateBone != null)
+					{
+						Debug.LogWarning(String.Format("MISSING BONE: {0}", templateBone.name));
+						var actualParentBone = modelAsset.transform.FindDeepChild(templateBone.parent.name);
+						if (actualParentBone != null)
+						{
+							actualBone = new GameObject(templateBone.name).transform;
+							actualBone.parent = actualParentBone;
+							actualBone.localPosition = templateBone.localPosition;
+							actualBone.localRotation = templateBone.localRotation;
+							actualBone.localScale = templateBone.localScale;
+						}
+					}
+				}
+			}
+		}
+		return allBonesExist;
+	}
+
+
+	static void FixCharacterBones(SkeletonBone[] skelBones, HumanDescription humanDescription, string[] templateOverrideBoneNames ) {
+		Transform lastActualBone = null;
 		
 		skelBones [0] = Skel (humanDescription.skeleton[0].name, humanDescription.skeleton[0].position, humanDescription.skeleton[0].rotation, humanDescription.skeleton[0].scale);
 
-		for (int i = 1; i < skelBones.Count (); i++) { //for each bone in the template avatar skeleton
+		for (int i = 1; i < skelBones.Count(); i++)
+		{
+			//for each bone in the template avatar skeleton
 			
-			var real = (from m in humanDescription.skeleton //find any bone in the real aramture that also exists in the tempate avatar skeleton
-				where m.name.Equals (skelBones [i].name)
-				select m).FirstOrDefault();
+			var real =
+				(from m in
+						humanDescription
+							.skeleton //find any bone in the real armature that also exists in the template avatar skeleton
+					where m.name.Equals(skelBones[i].name)
+					select m).FirstOrDefault();
 
-			if (templateOverrideBoneNames.Contains(skelBones [i].name)) { //if this bone should be overridden by the template transform offsets
-				skelBones [i] = Skel (skelBones [i].name, real.position, skelBones [i].rotation, skelBones [i].scale);
+			if (templateOverrideBoneNames.Contains(skelBones[i].name))
+			{
+				//if this bone should be overridden by the template transform offsets
+				skelBones[i] = Skel(skelBones[i].name, real.position, skelBones[i].rotation,
+					skelBones[i].scale);
 
-			} else { //Use original transforms and not be changed
-				skelBones [i] = Skel (skelBones [i].name, real.position, real.rotation, real.scale);
-			}				
-
+			}
+			else
+			{
+				//Use original transforms and do not change
+				skelBones[i] = Skel(skelBones[i].name, real.position, real.rotation, real.scale);
+			}
+			
 		}
 	}
 
-	public static void ApplyTemplateSkeleton(ModelImporter modelImporter, GameObject modelAsset, ArmatureLinker.CharacterType characterType)
+	public static void ApplyTemplateSkeleton(ModelImporter modelImporter, GameObject real, ArmatureLinker.CharacterType characterType)
 	{
-		GameObject fbxObject = null;
+		GameObject templateObject = null;
 		string[] templateOverrideBoneNames = null;
 
 		switch (characterType) {
-		case ArmatureLinker.CharacterType.REALLUSION:
-			fbxObject = Resources.Load<GameObject> ("ReallusionPose");
-			templateOverrideBoneNames = reallusionTemplateOverrideBoneNames;
+		case ArmatureLinker.CharacterType.DAZ3D_G3:
+			templateObject = Resources.Load<GameObject> ("Pose_Daz3D_G3");
+			templateOverrideBoneNames = Daz3DG3TemplateOverrideBoneNames;
+			break;
+		case ArmatureLinker.CharacterType.DAZ3D_G2:
+			templateObject = Resources.Load<GameObject> ("Pose_Daz3D_G2");
+			templateOverrideBoneNames = Daz3DG2TemplateOverrideBoneNames;
+			break;
+		case ArmatureLinker.CharacterType.MIXAMO:
+			templateObject = Resources.Load<GameObject> ("Pose_Mixamo");
+			templateOverrideBoneNames = MixamoTemplateOverrideBoneNames;
+			break;
+		case ArmatureLinker.CharacterType.CC3:
+			templateObject = Resources.Load<GameObject> ("Pose_CC3");
+			templateOverrideBoneNames = CC3TemplateOverrideBoneNames;
 			break;
 		case ArmatureLinker.CharacterType.MAKEHUMAN:
 		case ArmatureLinker.CharacterType.DEFAULT:
-			fbxObject = Resources.Load<GameObject> ("MakehumanPose");
-			templateOverrideBoneNames = makehumanTemplateOverrideBoneNames;
+			templateObject = Resources.Load<GameObject> ("Pose_Makehuman");
+			templateOverrideBoneNames = MakehumanTemplateOverrideBoneNames;
 			break;
 		default:
-			Debug.LogError ("Non-templateType detected - Filename must begine with a skeleton template type!");
+			Debug.LogError ("Non-templateType detected - Filename must begin with a skeleton template type!");
 			return;
 		}
-
-		/*bool isRellusion = true;
-		if (isRellusion) {
-			fbxObject = Resources.Load<GameObject> ("ReallusionPose");
-		} else {
-			fbxObject = Resources.Load<GameObject> ("MakehumanPose");
-		}*/
-
-		if (fbxObject == null) {
+		
+		if (templateObject == null) {
 			Debug.LogError ("Error: The TemplateAvatar was not found in the Resources folder. Can not create the HumanDescription or set the T-Pose for this character.");
 			return;
 		}
 
-		var templateAvatar = fbxObject.GetComponent<Animator>().avatar;
+		/*Debug.Log("TEMPLATE OBJECTS: " + AnimPrepAssetBuilder.currentModelPath);
+		var skeletonPath = Path.Combine(Application.dataPath, "skeleton.csv");
+		if (File.Exists(skeletonPath))
+			File.Delete(skeletonPath);
+		
+		using (StreamWriter sw = File.AppendText(skeletonPath)) 
+		{
+			var children = templateObject.GetComponentsInChildren<Transform>();
+			for (int i = 1; i < children.Length; i++)
+			{
+				var child = children[i].transform;
+				var line = String.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8}",
+					child.name,
+					child.parent.name,
+					child.localPosition.x.ToString("F8"),
+					child.localPosition.y.ToString("F8"),
+					child.localPosition.z.ToString("F8"),
+					child.localRotation.x.ToString("F8"),
+					child.localRotation.y.ToString("F8"),
+					child.localRotation.z.ToString("F8"),
+					child.localRotation.w.ToString("F8")
+				);
+
+				sw.WriteLine(line);
+				Debug.Log(line);
+			}
+		}*/
+
+		var templateAvatar = templateObject.GetComponent<Animator>().avatar;
 		var templateSkel = templateAvatar.humanDescription.skeleton;
-		List<SkeletonBone> skelBones = new List<SkeletonBone> (templateSkel);
 
-		FixCharacterBones (modelAsset, templateSkel /*skelBones*/, modelImporter.humanDescription, templateOverrideBoneNames);
+		if (real)
+		{ //the real object has been passed in to check if it has any missing bones (missing bones will be added)
+			if (FixMissingBoneTransforms(real, templateObject) == false)
+			{ //use the template humanDescription for this skeleton
+				real.GetComponent<Animator>().avatar = templateAvatar;
+			}
+		}
+		else
+		{ //create a custom humanDescription for this skeleton
+			FixCharacterBones(templateSkel, modelImporter.humanDescription, templateOverrideBoneNames);
+			
+			var hd = templateAvatar.humanDescription; //a new human description with the mutable arrays (Using the template HumanBones as bone connection defs)
+			hd.skeleton = templateSkel;// skelBones.ToArray (); //apply the custom skeleton
 
-		var hd = templateAvatar.humanDescription; //a new human description with the mutable arrays (Using the template HumanBones as bone connection defs)
-		hd.skeleton = templateSkel;// skelBones.ToArray (); //apply the custom skeleton
-
-		modelImporter.humanDescription = hd;
+			modelImporter.humanDescription = hd;
+		}
 	}
 
 	static Texture GetFileByKeywords(string path, string[] keywords) {
@@ -724,12 +821,19 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 
 				string jsonTxt = File.ReadAllText(jsonPath);
 				AssetBundleUserJson userPrefs = (AssetBundleUserJson) JsonUtility.FromJson (jsonTxt, typeof(AssetBundleUserJson));
-
 				ArmatureLinker.CharacterType characterType;
-
 				switch (userPrefs.variantTag) {
-				case ReallusionAssetVariantTag:
-					characterType = ArmatureLinker.CharacterType.REALLUSION;
+				case Daz3DG3AssetVariantTag:
+					characterType = ArmatureLinker.CharacterType.DAZ3D_G3;
+					break;
+				case Daz3DG2AssetVariantTag:
+					characterType = ArmatureLinker.CharacterType.DAZ3D_G2;
+					break;
+				case MixamoAssetVariantTag:
+					characterType = ArmatureLinker.CharacterType.MIXAMO;
+					break;
+				case CC3AssetVariantTag:
+					characterType = ArmatureLinker.CharacterType.CC3;
 					break;
 				case MakehumanAssetVariantTag:
 					characterType = ArmatureLinker.CharacterType.MAKEHUMAN;
@@ -740,9 +844,9 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 				}
 
 				if (!modelImporter.userData.Contains (mappedTag)) {
-					ApplyTemplateSkeleton (modelImporter, modelAsset, characterType); //Set the humandescription bone overrides (only needed for consistancy) // set "enforce-tpose" and begin the reimport
+					//ApplyTemplateSkeleton (modelImporter, modelAsset, characterType); //Set the humandescription bone overrides (only needed for consistency) // set "enforce-tpose" and begin the reimport
 					try {
-						ApplyTemplateSkeleton (modelImporter, modelAsset, characterType); //Set the humandescription bone overrides (only needed for consistancy) // set "enforce-tpose" and begin the reimport
+						ApplyTemplateSkeleton (modelImporter, null, characterType); //Set the humandescription bone overrides (only needed for consistancy) // set "enforce-tpose" and begin the reimport
 					} finally {
 						modelImporter.userData = modelImporter.userData + " " + mappedTag;
 						modelImporter.SaveAndReimport ();
@@ -766,9 +870,14 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 
 				GameObject.DestroyImmediate (model); //destroy the prefab as it will be overwritten by "real"
 
+				//ApplyTemplateSkeleton (modelImporter, modelAsset, characterType); //Set the humandescription bone overrides (only needed for consistency) // set "enforce-tpose" and begin the reimport
+
+				ApplyTemplateSkeleton (modelImporter, real, characterType); //Set the humandescription bone overrides (only needed for consistancy) // set "enforce-tpose" and begin the reimport
+	
 
 
-
+				
+				
 				string modelFileNameRestPose = Path.GetFileNameWithoutExtension( assetPath );
 				string destinationPathRestPose = Path.Combine(prefabsFolder, modelFileNameRestPose + ".prefab");
 
@@ -841,12 +950,18 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 					}
 
 					switch (userPrefs.variantTag) {
-					case ReallusionAssetVariantTag:
+					case Daz3DG3AssetVariantTag:
+						break;
+					case Daz3DG2AssetVariantTag:
+						break;
+					case MixamoAssetVariantTag:
+						break;
+					case CC3AssetVariantTag:
 
 						if (bonesList.Count == 2 &&
 						    new string[] {
-								"CC_Base_R_Eye",
-								"CC_Base_L_Eye"
+								"R_Eye",
+								"L_Eye"
 						}.All (n => bonesList.Contains (n))) {
 							//Debug.Log ("I THINK THIS IS AN EYE");
 							makehumanRenderers [i].type = MakehumanMeshBoneType.eyeballs;
@@ -855,8 +970,8 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 
 						if (bonesList.Count == 2 &&
 						    new string[] {
-								"CC_Base_Teeth01",
-								"CC_Base_Teeth02"
+								"Teeth01",
+								"Teeth02"
 						}.All (n => bonesList.Contains (n))) {
 							//Debug.Log ("I THINK THIS IS TEETH");
 							makehumanRenderers [i].type = MakehumanMeshBoneType.teeth;
@@ -865,9 +980,9 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 
 						if (bonesList.Count == 3 &&
 						    new string[] {
-								"CC_Base_Tongue01",
-								"CC_Base_Tongue02",
-								"CC_Base_Tongue03"
+								"Tongue01",
+								"Tongue02",
+								"Tongue03"
 						}.All (n => bonesList.Contains (n))) {
 							//Debug.Log ("I THINK THIS IS A TONGUE");
 							makehumanRenderers [i].type = MakehumanMeshBoneType.tongue;
@@ -971,8 +1086,7 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 							}
 							materialName = Path.GetFileNameWithoutExtension (materialName);
 
-							if (materialsJson.ContainsKey (materialName)) {		
-
+							if (materialsJson.ContainsKey (materialName)) {
 								//if (materialsJson.ContainsKey (textureFileName)) {
 
 								//var blenderMaterial = materialsJson [textureFileName];
@@ -993,8 +1107,7 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 								var use_map_emit = false;
 
 								foreach (var slot in blenderMaterial.texture_slots) { //check all slots to see if there are any spec or emmit textures
-									if (slot.use_map_color_diffuse) {										
-										//Debug.Log ("use_map_color_diffuse " + slot.filename);
+									if (slot.use_map_color_diffuse) {
 										//var texPath = AssetDatabase.GetAssetPath (material.mainTexture);
 										var texPath = Path.Combine (Path.GetDirectoryName (assetPath), slot.filename);
 										if (File.Exists (texPath)) {
@@ -1054,15 +1167,13 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 										blenderMaterial.specular_color.g * blenderMaterial.specular_intensity * 0.25f,
 										blenderMaterial.specular_color.b * blenderMaterial.specular_intensity * 0.25f
 									));
-
-
 								}
 
 								if (use_map_color_diffuse) { //set all white and adjust brightness based on diffuse intensity set from blender
 									material.SetColor ("_Color", new Color (
-										blenderMaterial.diffuse_intensity,
-										blenderMaterial.diffuse_intensity,
-										blenderMaterial.diffuse_intensity,
+										blenderMaterial.diffuse_color.r * blenderMaterial.diffuse_intensity,
+										blenderMaterial.diffuse_color.g * blenderMaterial.diffuse_intensity,
+										blenderMaterial.diffuse_color.b * blenderMaterial.diffuse_intensity,
 										blenderMaterial.alpha
 									));
 								} else { 
@@ -1146,7 +1257,7 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 									}
 
 									switch (userPrefs.variantTag) {
-									case ReallusionAssetVariantTag:
+									case CC3AssetVariantTag:
 										if (	blenderMaterial.key.ToLower ().Contains ("eye") && (
 												blenderMaterial.key.ToLower ().Contains ("lash")
 												||

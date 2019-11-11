@@ -4,8 +4,8 @@ __author__ = "Grant Olsen"
 __copyright__ = "Copyright 2019, Animation Prep Studios"
 __credits__ = [""]
 __license__ = "GPL"
-__version__ = "2.0.2"
-__title__ = 'AnimPrep Asset Project Creator'
+__version__ = "2.2.1"
+__title__ = 'Asset Creator'
 import os, sys, json, time, pickle
 
 from shutil import copyfile
@@ -38,7 +38,6 @@ for Python 3.4:
 
 eg.
 c:\Python34\python.exe -m PyInstaller -w -F --icon=logo.ico AssetCreator.py
-
 """
 
 #This is the raw text for the blenderscript.py script that is run from within the user's .blend file from subprocess launches the scene file. Dont forget this file becomes a temporary file and is saved into a temp directory.
@@ -46,8 +45,17 @@ blenderscript_avatar = r"""
 #This file is pushed into a headless subprocess of the user's .blend via command line args, this automatically export .fbx file and material infos json
 
 # !/usr/bin/env python2.7
-import bpy, json, os, re
+import bpy, json, os, re, csv, fnmatch, operator
 from mathutils import *
+from difflib import SequenceMatcher
+
+print("BLENDSCRIPT START")
+
+if len(bpy.context.selected_objects) > 0:
+	try:
+		bpy.ops.object.mode_set(mode='OBJECT')
+	except:
+		pass
 
 bpy.ops.file.unpack_all(method='WRITE_LOCAL')
 
@@ -67,8 +75,9 @@ armObjs = [o for o in bpy.data.objects if o.type == 'ARMATURE']
 
 # remove all scene objects that are not connected to a valid armature modifier (eg lamps, cameras, rogue cubes)
 armature = None
-
+print("Check All Objects")
 for obj in bpy.data.objects:
+
 	if obj.type == 'ARMATURE':
 		armature = obj
 		continue
@@ -79,6 +88,10 @@ for obj in bpy.data.objects:
 			if modifier.type == 'ARMATURE':
 				if modifier.object is not None:
 					connectedToArmature = True
+					if obj.type == 'MESH':
+						if obj.data.shape_keys is not None:
+							for shape in obj.data.shape_keys.key_blocks:
+								shape.value = 0
 					break
 
 	if not connectedToArmature: #last chance to check if it is instead parented to a bone of an armature
@@ -92,8 +105,10 @@ for obj in bpy.data.objects:
 
 # build the material json file:
 material_data = []
-
+print("Check All Materials")
 for m in bpy.data.materials:
+	m.name = re.sub(r'[\\/\:*<>\|\.%\$\^&]', '', m.name) #remove illegal filename characters
+
 	if (m.users == 0 ):
 		continue
 
@@ -112,10 +127,8 @@ for m in bpy.data.materials:
 				"material": m.name,
 				"slot": i,
 
-				# "use_map_color_diffuse" : texture_data.image.use_map_color_diffuse,
-				# "diffuse_color_factor" : texture_data.image.diffuse_color_factor,
-
 				"use_map_color_diffuse": slot.use_map_color_diffuse,
+				"diffuse_color_factor" : slot.diffuse_color_factor,
 
 				"use_map_specular": slot.use_map_specular,
 				"specular_factor": slot.specular_factor,
@@ -139,6 +152,7 @@ for m in bpy.data.materials:
 		"use_transparency": m.use_transparency,
 
 		"diffuse_intensity": m.diffuse_intensity,
+		"diffuse_color": {'r': m.diffuse_color.r, 'g': m.diffuse_color.g, 'b': m.diffuse_color.b},
 		"specular_intensity": m.specular_intensity,
 		"specular_hardness": m.specular_hardness,
 		"specular_color": {'r': m.specular_color.r, 'g': m.specular_color.g, 'b': m.specular_color.b},
@@ -159,15 +173,195 @@ for m in bpy.data.materials:
 
 # create an empty dictionary to store all found bones and drivers in
 boneDict = {}
-
+print("Check Armature")
 if armature is not None:
+	armature.name = armature.data.name = "Armature"
+	bones = armature.data.bones
 
-	#apply the aramture scale as 1,1,1 then fix Rellusion pose offsets caused by applying the new scale
+	#Find most common substring in a list of strings - https://stackoverflow.com/a/58586310/2169557
+	substring_counts={}
+	for i in range(0, len(bones)):
+		for j in range(i+1,len(bones)):
+			string1 = bones[i].name
+			string2 = bones[j].name
+			match = SequenceMatcher(None, string1, string2).find_longest_match(0, len(string1), 0, len(string2))
+			matching_substring=string1[match.a:match.a+match.size]
+			if(matching_substring not in substring_counts):
+				substring_counts[matching_substring]=1
+			else:
+				substring_counts[matching_substring]+=1
+
+	max_occurring_substring=max(substring_counts.items(), key=operator.itemgetter(1))[0]
+	print("Common Substring: " + max_occurring_substring)
+	csvdict = None
+	try:
+		filepath = bpy.data.filepath
+		directory = os.path.dirname(filepath)
+		with open(directory + r'\skeleton.csv', mode='r') as infile:
+			reader = csv.reader(infile)
+			next(reader) #skip the first line so as not to include the "Armature" bone
+			csvdict = {rows[0]:rows[1:8] for rows in reader}
+
+		for k in list(csvdict):
+			if k.endswith("_end"):
+			   del csvdict[k]
+
+	except OSError as e:
+		print("ERROR, The template skeleton.csv was missing!!!")
+
+
+	if csvdict is not None:
+		print("Checking Template Skeleton")
+		#Find most common substring in the template skeleton
+		substring_counts={}
+		boneKeys = list(csvdict.keys())
+		for i in range(0, len(boneKeys)):
+			for j in range(i+1,len(boneKeys)):
+				string1 = boneKeys[i]
+				string2 = boneKeys[j]
+				match = SequenceMatcher(None, string1, string2).find_longest_match(0, len(string1), 0, len(string2))
+				matching_substring=string1[match.a:match.a+match.size]
+				if(matching_substring not in substring_counts):
+					substring_counts[matching_substring]=1
+				else:
+					substring_counts[matching_substring]+=1
+		#check to see if the most frequent substring exist in both the armature and the template skeleton
+		matchesSkeleton = max_occurring_substring==max(substring_counts.items(), key=operator.itemgetter(1))[0]
+
+		print("Template Substring Matched " + str(matchesSkeleton))
+		if not matchesSkeleton: #only remove the substring if the match is a common substring that was not also found in the template skeleton
+			print("Remove Common Substring: " + max_occurring_substring)
+
+			for bone in bones: #remove most frequent substring for all bones. so the skeleton bone name will be as simple as possible and have less appended junk
+				if bone.name.startswith(max_occurring_substring):
+					bone.name = bone.name[len(max_occurring_substring):]
+
+		print("Find Bones Not Matching The Template")
+		bones = armature.data.bones #get them again, incase something changed
+		deleteBones = []
+		for bone in bones: #for each bone in the armature.
+			if not bone.name in csvdict: #if this bone is not in the skeleton template.
+
+				deleteBones.append(bone.name)
+
+				for obj in bpy.data.objects: #search through each mesh for any vertex groups with this bone name.
+					if obj.type == 'MESH': #if this item is a mesh.
+						if bone.parent is not None:
+							if bone.name in obj.vertex_groups and bone.parent.name in obj.vertex_groups: #this mesh has a vertex group for this bone.
+								#Now apply the VertexWeightMix modifiers and delete this bone
+								modifier = obj.modifiers.new(name="", type='VERTEX_WEIGHT_MIX')
+
+								modifier.vertex_group_b = bone.name
+								modifier.vertex_group_a = bone.parent.name
+								modifier.mix_set = 'ALL'
+								modifier.mix_mode = 'ADD'
+
+								#bpy.context.scene.objects.active = obj #dont apply here, must be reversed
+								#bpy.ops.object.modifier_apply (modifier=modifier.name)
+
+		print("Create VERTEX_WEIGHT_MIX modifiers")
+		for obj in bpy.data.objects: #apply all VERTEX_WEIGHT_MIX modifiers in reverse order
+			if obj.type == 'MESH':
+				for modifier in reversed(list(obj.modifiers)):
+					if modifier.type == 'VERTEX_WEIGHT_MIX':
+						bpy.context.scene.objects.active = obj
+						bpy.ops.object.modifier_apply (modifier=modifier.name)
+
+		def GetDeepParent(p, skip):
+			if p.parent is not None and p.name in skip:
+				return GetDeepParent(p.parent, skip)
+			return p
+
+		print("Apply VERTEX_WEIGHT_MIX modifiers")
+		for deleteBone in deleteBones: #now apply vertex weight for bones that are going to be deleted
+			bone = armature.data.bones[deleteBone]
+
+			for obj in bpy.data.objects: #search through each mesh for any vertex groups with this bone name.
+				if obj.type == 'ARMATURE':
+					continue
+
+				if obj.parent_bone == deleteBone:
+					if bone.parent is not None:
+						matrix_world = obj.matrix_world.copy()
+						obj.parent_bone = bone.parent.name
+						obj.matrix_world = matrix_world
+
+				if obj.type == 'MESH': #if this item is a mesh.
+					if bone.parent is not None:
+						#search through each mesh for any vertex groups with this bone name.
+						if bone.name in obj.vertex_groups:
+							if bone.parent.name in obj.vertex_groups: #this mesh has a vertex group for this bone.
+								#Now apply the VertexWeightMix modifiers and delete this bone
+								modifier = obj.modifiers.new(name="", type='VERTEX_WEIGHT_MIX')
+
+								modifier.vertex_group_b = bone.name
+								modifier.vertex_group_a = bone.parent.name
+								modifier.mix_set = 'ALL'
+								modifier.mix_mode = 'ADD'
+
+								bpy.context.scene.objects.active = obj
+								bpy.ops.object.modifier_apply (modifier=modifier.name)
+							else:#this mesh is painted only to the bone that is to be deleted, so must swap bones for vertex group
+								obj.vertex_groups[bone.name].name = GetDeepParent(bone.parent, deleteBones).name
+
+		bpy.context.scene.objects.active = armature
+		bpy.ops.object.mode_set(mode='EDIT')
+
+		print("Delete Unused Bones")
+		for deleteBone in deleteBones:
+			findBone = armature.data.edit_bones[deleteBone]
+			armature.data.edit_bones.remove(findBone)
+
+		bpy.ops.object.mode_set(mode='OBJECT')
+
+
+	if csvdict is None:
+		print("Skipping .csv template...")
+	if csvdict is not None:
+		allKeys = list(csvdict)
+
+		def delete_recursive():
+			for key in allKeys:
+				if key in armature.data.bones:
+					del allKeys[allKeys.index(key)]
+					delete_recursive()
+					break
+
+		def add_recursive():
+			for key in allKeys:
+				if csvdict[key][0] in armature.data.bones:
+					keyParent = csvdict[key][0]
+
+					offset = Vector((-float(csvdict[key][1]) / armature.scale.x, float(csvdict[key][2]) / armature.scale.x, float(csvdict[key][3]) / armature.scale.x))
+
+					b = armature.data.edit_bones.new(key)
+					pb = armature.data.edit_bones[keyParent]
+
+					b.head = pb.head
+					b.tail = pb.head
+
+					b.head += offset
+					b.tail += offset + Vector((0,1,0))
+
+					b.parent = armature.data.edit_bones[keyParent]
+
+					del allKeys[allKeys.index(key)]
+					add_recursive()
+					break
+
+		delete_recursive()
+		while allKeys.__len__() > 0:
+			bpy.ops.object.mode_set(mode='EDIT')
+			add_recursive()
+			bpy.ops.object.mode_set(mode='OBJECT')
+
+	print("Apply Armature Scale")
+	#apply the aramture scale as 1,1,1 then fix pose offsets caused by applying the new scale
 	armature.select = True
 	bpy.context.scene.objects.active = armature
 
 	for bone in armature.pose.bones:
-		#all rellusion characters have twist bones, they look strange after applying scale (unless they are completely reset)
+		#some characters have twist bones, they look strange after applying scale (unless they are completely reset)
 		if "Twist" in bone.name:
 			bone.location = Vector( (0,0,0) )
 			bone.rotation_quaternion = Quaternion( (0, 0, 0), 0 )
@@ -176,8 +370,10 @@ if armature is not None:
 			bone.keyframe_insert(data_path="rotation_quaternion")
 			bone.keyframe_insert(data_path="scale")
 
-	hipBoneIndex = 1 #CC_Base_Hip
+	mag = armature.pose.bones[0].matrix.translation.magnitude #if the zeroth bone is very close to the origin, then use the acutal hip is probably at index 1
+	hipBoneIndex = 0 if mag > 0.01 else 1 #determine which of the fist two bones is probably the hip bone, models have root bones that at the origin which should be ignored because it's not the actual hip bone.
 
+	print("Apply Wold Position")
 	#First save the hip's world position
 	pose_bone = armature.pose.bones[hipBoneIndex]
 	obj = pose_bone.id_data
@@ -185,7 +381,7 @@ if armature is not None:
 
 	#apply the armature scale
 	bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-	bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+	bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
 	bpy.ops.object.mode_set(mode='POSE', toggle=False)
 
 	#store the delta hip position, it will be used to offset objects parented to any bones
@@ -199,7 +395,8 @@ if armature is not None:
 	pose_bone.scale = Vector((1,1,1))
 	pose_bone.keyframe_insert(data_path="location")
 
-	#now search for any objects that are a child of a bone, but does not have any weightpainting (armature modifiers)
+
+	#now search for any objects that are a child of a bone, but do not have any weightpainting (armature modifiers)
 	for obj in bpy.data.objects: #TODO use armature.children instead of the entire scene?
 		if obj.type == 'ARMATURE':
 			armature = obj
@@ -218,10 +415,14 @@ if armature is not None:
 		if (root in armObjs):
 			obj.location -= deltaLocation #apply the hip delta positon, fix issue where the eyes shoot off upward after the action has been applied later on, apply all rotations to this object now...
 
+	print("Delete All Actions")
 	#Create the rest pose used for the bvh export reference pose
 	for action in bpy.data.actions: #Delete all actions
 		bpy.data.actions.remove(action)
 
+
+
+	print("Create APose Action")
 	armature.animation_data_create()
 
 	armature.animation_data.action = bpy.data.actions.new(name="APose")
@@ -252,7 +453,7 @@ if armature is not None:
 
 	previousAction = armature.animation_data.action
 
-
+	print("Create Rest Action")
 	armature.animation_data.action = bpy.data.actions.new(name="RestPose")
 
 	for bone in armature.data.bones:
@@ -286,7 +487,7 @@ if armature is not None:
 
 
 
-
+	print("Check Facerig Drivers")
 	if not hasattr(armature.animation_data, "drivers"):
 		print("ERROR! THERE WERE NO FACE RIG DRIVERS. You must import your .mhx2 models with \"Face Shapes\" and \"Face Shapes Drivers\" checkboxes checked!!!")
 		exit()
@@ -294,6 +495,7 @@ if armature is not None:
 	# iterate over all bones of the active object
 	highestBonePoint = 0
 
+	print("Check All Pose Bones")
 	for bone in armature.pose.bones:
 		highestBonePoint = max(highestBonePoint, bone.head.z * armature.scale.z)
 		# iterate over all drivers now
@@ -423,6 +625,7 @@ filepath = bpy.data.filepath
 directory = os.path.dirname(filepath)
 dataPath = os.path.join(directory, 'blender.json')
 
+print("Write JSON")
 with open(dataPath, 'w') as outfile:
 	outdata = {
 		'materials': material_data,
@@ -431,6 +634,7 @@ with open(dataPath, 'w') as outfile:
 
 	json.dump(outdata, outfile)
 
+print("Remove Lamps")
 for lamp in [o for o in bpy.data.objects if o.type == 'LAMP']:
 	bpy.data.scenes[0].objects.unlink(lamp)
 	bpy.data.objects.remove(lamp)
@@ -438,6 +642,7 @@ for lamp in [o for o in bpy.data.objects if o.type == 'LAMP']:
 # Export fbx character:
 # filepath = os.path.join(r"X:\\Arduino MOCAP\\Headless Blender Django Makehuman\\", export_file_name)
 
+print("Remove SUBSURF Modifiers")
 [[obj.modifiers.remove(mod) for mod in obj.modifiers if mod.type == "SUBSURF"] for obj in bpy.data.objects] #remove all subsufr modifiers so that they can not be applied (they would remove all blendshapes by keeping them)
 
 #bpy.ops.object.select_all(action='DESELECT')
@@ -445,12 +650,13 @@ for lamp in [o for o in bpy.data.objects if o.type == 'LAMP']:
 
 tallest_human_ever = 8.11 * 0.3048
 if highestBonePoint >= 2*tallest_human_ever: #impossibly tall character, must be scaled down (maybe user accidentally selected decimeters instead of meters)
+	print("Impossibly tall character, Re-scalling")
 	bpy.ops.transform.resize(value=(0.1, 0.1, 0.1), constraint_axis=(False, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
 	bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
 
 
-
+print("Fix Children")
 for obj in bpy.data.objects:
 	if obj.type == 'ARMATURE':
 		armature = obj
@@ -471,14 +677,9 @@ for obj in bpy.data.objects:
 
 	if connectedToArmature: #fix issue where the eyes shoot off upward after the action has been applied later on, apply all rotations to this object now...
 		obj.select = True
-		print("OBJ " + str(obj))
 		bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 		bpy.ops.object.select_all(action='DESELECT')
 		bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-
-
-
-
 
 filepath = os.path.join(os.path.dirname(bpy.data.filepath), os.path.splitext(bpy.data.filepath)[0] + '.fbx')
 
@@ -506,40 +707,54 @@ try:
 except Exception as e:
 	print(e)
 
+print("SAVED TO " + bpy.data.filepath)
 bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
 print("\nSaved Done!")
 """
 
 blenderscript_prop = r"""
-
-#This file is pushed into a headless subprocess of the user's .blend via command line args, this automatically export .fbx file and material infos json
+#This file is pushed into a headless subprocess of the user's .blend via command line args, this automatically exports .fbx file and material infos json
 
 # !/usr/bin/env python2.7
 import bpy, json, os, re
+
+print("BLENDSCRIPT START")
+
+if len(bpy.context.selected_objects) > 0:
+	try:
+		bpy.ops.object.mode_set(mode='OBJECT')
+	except:
+		pass
 
 bpy.ops.file.unpack_all(method='WRITE_LOCAL')
 
 # build the material json file:
 material_data = []
 
+print("Check All Materials")
 for m in bpy.data.materials:
+	m.name = re.sub(r'[\\/\:*<>\|\.%\$\^&]', '', m.name) #remove illegal filename characters
+
 	if (m.users == 0 ):
 		continue
 
 	used_texture_slots = []
-	for slot in m.texture_slots:
+	for i, slot in enumerate(m.texture_slots):
 
 		if slot is not None and hasattr(slot.texture, 'image'):
+			if slot.texture.image is None:
+				continue
+
 			filename = slot.texture.image.filepath #.encode('ascii','ignore').decode()  # the filename and extension of the image, strip dir info
 			filename = os.path.basename(filename.replace('//', ''))  # Extract file name from path
 
 			texture_data = {
 				"filename": filename,
-
-				# "use_map_color_diffuse" : texture_data.image.use_map_color_diffuse,
-				# "diffuse_color_factor" : texture_data.image.diffuse_color_factor,
+				"material": m.name,
+				"slot": i,
 
 				"use_map_color_diffuse": slot.use_map_color_diffuse,
+				"diffuse_color_factor" : slot.diffuse_color_factor,
 
 				"use_map_specular": slot.use_map_specular,
 				"specular_factor": slot.specular_factor,
@@ -563,6 +778,7 @@ for m in bpy.data.materials:
 		"use_transparency": m.use_transparency,
 
 		"diffuse_intensity": m.diffuse_intensity,
+		"diffuse_color": {'r': m.diffuse_color.r, 'g': m.diffuse_color.g, 'b': m.diffuse_color.b},
 		"specular_intensity": m.specular_intensity,
 		"specular_hardness": m.specular_hardness,
 		"specular_color": {'r': m.specular_color.r, 'g': m.specular_color.g, 'b': m.specular_color.b},
@@ -633,7 +849,6 @@ blenderscript_scene = r"""
 """
 
 blenderscript_nodes = r"""
-
 ######## BI to Cycles Shaders Conversion ########
 
 # system_cycles_material_text_node.py Copyright (C) 5-mar-2012, Silvio Falcinelli, additional fixes by others
@@ -1114,13 +1329,34 @@ def ProcessModelFile(context, filepath, blenderpath, LogMessage):
 		LogMessage("Directory %s already exists??" % dest_directory, 'warning')
 
 	LogMessage("Copying .blend character to project directory.")
-
-
 	filepathcopy = os.path.join(dest_directory, basename_extension) #change to the copied file
 	copyfile(filepath, filepathcopy)
 
 
-	LogMessage("Attempting to copy textures from source directoy")
+	LogMessage("Copying .csv template skeleton to project directory.")
+	try:
+		source_skeleton = os.path.join(source_directory, "skeleton.csv")
+		dest_skeleton = os.path.join(dest_directory, "skeleton.csv")
+		copyfile(source_skeleton, dest_skeleton)
+		LogMessage("Deleting file: " + source_skeleton, 'grayed')
+		os.remove(source_skeleton)#it is not a texture or the .fbx (so delete this file)
+
+	except OSError as e:
+	    LogMessage("The .csv template skeleton file was not found. This could cause alignment issues.", 'warning')
+
+	LogMessage("Copying .csv fingers to project directory.")
+	try:
+		source_fingers = os.path.join(source_directory, "fingers.csv")
+		dest_fingers = os.path.join(dest_directory, "fingers.csv")
+		copyfile(source_fingers, dest_fingers)
+		LogMessage("Deleting file: " + source_fingers, 'grayed')
+		os.remove(source_fingers)#it is not a texture or the .fbx (so delete this file)
+
+	except OSError as e:
+	    LogMessage("The .csv template fingers file was not found. This could cause finger bending issues.", 'warning')
+
+
+	LogMessage("Attempting to copy textures from source directory.")
 	textures_directory = os.path.join(dest_directory, "textures")
 	source_textures_directory = os.path.join(source_directory, "textures")
 
@@ -1165,9 +1401,10 @@ def ProcessModelFile(context, filepath, blenderpath, LogMessage):
 
 		os.remove(tempfilepath)
 
-		LogMessage(out, 'stdout') #logs all the stdout messages from blender subprocess to this tkinter scrolltext
+		print(type(out))
+		LogMessage(str(out).replace(r'\r\n', '\r\n'), 'stdout') #logs all the stdout messages from blender subprocess to this tkinter scrolltext
 
-		LogMessage("Success! A .json file has just been created containing the model information necessary for this project.", 'success')
+		LogMessage("Finished processing blendscript.", 'success')
 
 	except subprocess.CalledProcessError as e:
 		#raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
@@ -1238,6 +1475,27 @@ def ProcessModelFile(context, filepath, blenderpath, LogMessage):
 
 				im.convert('P') #prevents strange error: "ValueError: unknown raw mode" - known bug: https://github.com/python-pillow/Pillow/issues/646
 
+				def create_mask_image(diff, saveName):
+					mask = im.copy()
+
+					if diff.size > mask.size:
+						mask = mask.resize(diff.size, Image.ANTIALIAS)
+					else:
+						diff = diff.resize(mask.size, Image.ANTIALIAS)
+
+					mask.convert('1')
+					mask.mode = "1"
+
+					diff.putalpha(mask)
+
+					os.path.splitext(subslot['filename'])
+
+					savePath = os.path.join(folder, saveName)
+					diff.save(savePath)
+
+					LogMessage("Created a new alpha masked composite image: %s " % subslot['filename'])
+
+
 				#TODO For Unity - if use_map_alpha is true for this image, then need to seek for any images in the same material/slot that uses diffuse use_map_color_diffuse and apply the alpha mask
 				for item in materialsJson:
 					for slot in item['texture_slots']:
@@ -1246,41 +1504,43 @@ def ProcessModelFile(context, filepath, blenderpath, LogMessage):
 								im = ImageEnhance.Brightness(im).enhance(0.5) #default values are way too high for Standard shader so multiply by 0.5
 								LogMessage("Optimizing for \"use_map_specular\"", 'notice')
 							if slot['use_map_alpha']:
+								if slot['use_map_color_diffuse']:
+									continue
+
+								foundDiffuse = False
 								for subitem in materialsJson: #search for a corresponding diffuse/color image to apply the alpha mask to
 									for subslot in subitem['texture_slots']:
 										if subslot['material'] == slot['material']:
 											if subslot['slot'] != slot['slot']:
 												if subslot['use_map_color_diffuse'] is True:
-
 													sub_file_path = os.path.join(folder, subslot['filename']) #path to the diffuse image
-													diff = Image.open(sub_file_path) #the diffuse image
+													newFileName = os.path.splitext(subslot['filename'])[0] + '.png'
+													try:
+														diff = Image.open(sub_file_path) #the diffuse image
+														if diff is not None:
+															diff = diff.copy()
+															os.remove(sub_file_path)
+															create_mask_image(diff, newFileName)
 
-													if diff is not None:
-														mask = im.copy()
+													except Exception as e:
+														pass
 
-														if diff.size > mask.size:
-															mask = mask.resize(diff.size, Image.ANTIALIAS)
-														else:
-															diff = diff.resize(mask.size, Image.ANTIALIAS)
+													subslot['use_map_alpha'] = True #modify this so that the new diffuse image will use alpha when imported into Unity
+													subitem['texture'] = subslot['filename'] = newFileName
+													foundDiffuse = True
+													item['key'] = os.path.splitext(subslot['filename'])[0]
 
-														mask.convert('1')
-														mask.mode = "1"
+								if foundDiffuse is not True:
+									diff_rgb = item['diffuse_color']
+									newFileName = os.path.splitext(item['key'])[0] + '.png'
+									di = item['diffuse_intensity']
+									diff = Image.new('RGBA', size, color = (int(255*diff_rgb['r']*di), int(255*diff_rgb['g']*di), int(255*diff_rgb['b']*di))) #Create a new solid color diffuse image for default overlay
 
-														diff.putalpha(mask)
-
-														os.path.splitext(subslot['filename'])
-
-														newFileName = os.path.splitext(subslot['filename'])[0] + '.png'
-														subitem['texture'] = subslot['filename'] = newFileName
-														subslot['use_map_alpha'] = True #modify this so that the new diffuse image will use alpha when imported into Unity
-
-														os.remove(sub_file_path)
-
-														savePath = os.path.join(folder, newFileName)
-														diff.save(savePath)
-
-														LogMessage("Created a new alpha masked composite image: %s " % subslot['filename'])
-
+									slot['use_map_alpha'] = True #modify this so that the new diffuse image will use alpha when imported into Unity
+									slot['use_map_color_diffuse'] = True
+									item['texture'] = slot['filename'] = newFileName
+									item['diffuse_intensity'] = item['diffuse_color']['r'] = item['diffuse_color']['g'] = item['diffuse_color']['b'] = 1.0 #the image now has the diffuse color applied, so set this to full intensity
+									create_mask_image(diff, newFileName)
 
 				if (im.mode == "RGBA"):#check if the alpha is being used in this image by looking at if the alpha pixels overlay colors other than the default empty color
 
@@ -1467,9 +1727,9 @@ class Interface:
 			blenderscript_scene
 		]
 		self.choicesInfo = [
-			"Select the .blend file containing a .mhx2 model to create AnimPrep avatar project files.",
-			"Select the .blend file containing a prop model to create AnimPrep prop project files.",
-			"Select the .blend file containing a scene model to create AnimPrep scene project files."
+			"Select the .blend file containing a model to create avatar project files.",
+			"Select the .blend file containing a prop model to create prop project files.",
+			"Select the .blend file containing a scene model to create scene project files."
 		]
 
 		self.tkvar.set('Avatar') # set the default option

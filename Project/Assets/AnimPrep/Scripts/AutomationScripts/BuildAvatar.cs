@@ -43,8 +43,15 @@ public class BuildAvatar : MonoBehaviour {
 			string rootBoneName;
 
 			switch (characterType) {
-			case ArmatureLinker.CharacterType.REALLUSION:
-				rootBoneName = "cc_base_boneroot";
+			case ArmatureLinker.CharacterType.DAZ3D_G3:
+			case ArmatureLinker.CharacterType.DAZ3D_G2:
+				rootBoneName = "hip";
+				break;
+			case ArmatureLinker.CharacterType.MIXAMO:
+				rootBoneName = "Hips";
+				break;
+			case ArmatureLinker.CharacterType.CC3:
+				rootBoneName = "boneroot";
 				break;
 			case ArmatureLinker.CharacterType.MAKEHUMAN:
 			case ArmatureLinker.CharacterType.DEFAULT:
@@ -62,7 +69,7 @@ public class BuildAvatar : MonoBehaviour {
 				} else {
 
 
-					if (child.childCount > 0 && child.GetChild (0).name.ToLower ().Equals (rootBoneName)) {//cc_base_boneroot")) {
+					if (child.childCount > 0 && child.GetChild (0).name.ToLower ().Equals (rootBoneName.ToLower ())) {//boneroot")) {
 						metarig = child.gameObject;//.GetChild (0).gameObject;// child.gameObject;
 
 						//metarig.transform.parent = transform;

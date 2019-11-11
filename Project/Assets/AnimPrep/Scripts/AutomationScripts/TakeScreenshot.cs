@@ -98,15 +98,22 @@ public class TakeScreenshot : MonoBehaviour {
 	private static Bounds CalculateLocalBounds(Transform t)	{
 		Quaternion currentRotation = t.rotation;
 		t.rotation = Quaternion.Euler(0f,0f,0f);
-		Bounds bounds = new Bounds(t.position, Vector3.zero);
+
+        var baseScale = t.localScale;//store the current local scale of the base object
+        t.localScale = Vector3.one;//set the base object to be scale one, so the bounding box will fit properly
+
+        Bounds bounds = new Bounds(t.position, Vector3.zero);
 		foreach(Renderer renderer in t.GetComponentsInChildren<Renderer>())
 		{
 			bounds.Encapsulate(renderer.bounds);
 		}
 		Vector3 localCenter = bounds.center - t.position;
 		bounds.center = localCenter;
-		//Debug.Log("The local bounds of this model is " + bounds);
-		t.rotation = currentRotation;
+
+        t.localScale = baseScale;//restore the current local scale of the base object
+
+        //Debug.Log("The local bounds of this model is " + bounds);
+        t.rotation = currentRotation;
 
 		return bounds;
 	}
@@ -198,7 +205,10 @@ public class TakeScreenshot : MonoBehaviour {
 		var fwd = (m_camera.transform.position - xyzCP).normalized;
 
 		CalcPositons(bounds, sceneObject);
-		var xyzViewbox = CalcViewBox(xyzCP, up, fwd);
+
+        xyzCP = Vector3.Scale(xyzCP, sceneObject.localScale);
+        
+        var xyzViewbox = CalcViewBox(xyzCP, up, fwd);
 		var xyzP = sceneObject.rotation * xyz;
 
 		var closestDistance = Vector3.Dot(fwd, xyzCP) + xyzViewbox.z; //xyzViewbox.z;// + cam.nearClipPlane;
@@ -252,26 +262,41 @@ public class TakeScreenshot : MonoBehaviour {
 		
 	public Light directionalLight;
 
-	public Texture2D CamCapture()
-	{		
-		m_camera.Render();
+    public void FixColorSpace(Texture2D image)
+    {
+        for (int y = 0; y < image.height; y++)
+        {
+            for (int x = 0; x < image.width; x++)
+            {                
+                image.SetPixel(x, y, new Color(
+                    Mathf.Pow(image.GetPixel(x, y).r, 1f / 2.2f),
+                    Mathf.Pow(image.GetPixel(x, y).g, 1f / 2.2f),
+                    Mathf.Pow(image.GetPixel(x, y).b, 1f / 2.2f),
+                    Mathf.Pow(image.GetPixel(x, y).a, 1f / 2.2f)
+                ));
+            }
+        }
+    }
 
-		Texture2D image = new Texture2D(m_camera.targetTexture.width, m_camera.targetTexture.height);
-		image.ReadPixels(new Rect(0, 0, m_camera.targetTexture.width, m_camera.targetTexture.height), 0, 0);
-		image.Apply();
+    public Texture2D CamCapture()
+    {
+        m_camera.Render();
 
-		return image;
-	}
+        Texture2D image = new Texture2D(m_camera.targetTexture.width, m_camera.targetTexture.height);
+        image.ReadPixels(new Rect(0, 0, m_camera.targetTexture.width, m_camera.targetTexture.height), 0, 0);
 
-	public void CamCapture(string destPath)
+        FixColorSpace(image);
+        image.Apply();
+
+        return image;
+    }
+
+    public void CamCapture(string destPath)
 	{		
 		RenderTexture currentRT = RenderTexture.active;
 		RenderTexture.active = m_camera.targetTexture;
 
 		Texture2D image = CamCapture ();
-
-		image.ReadPixels(new Rect(0, 0, m_camera.targetTexture.width, m_camera.targetTexture.height), 0, 0);
-		image.Apply();
 
 		RenderTexture.active = currentRT;
 
