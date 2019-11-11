@@ -1,4 +1,4 @@
-# Animation Prep Studio (Avatar Builder) V2.0.2
+# Animation Prep Studio (Avatar Builder) V2.2.1
 
 Automation scripts for converting .blend models into avatar assets compatible with [Animation Prep Studio (Lite)](https://drive.google.com/open?id=17MyFQ75dfBuaf5IL4ba-4BH8klWj6-5r "Animation Prep Studio Direct Download"). This builder tool is designed to import .blend files directly, and which were created using blender [version 2.79b](https://download.blender.org/release/Blender2.79/ "Blender Downloads"). 
 
