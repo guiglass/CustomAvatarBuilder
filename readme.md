@@ -47,7 +47,7 @@ Copy the entire folder:
 
 And paste it into the folder at the path:
 
-`%USERPROFILE%\AppData\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite`
+`%USERPROFILE%\appdata\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite\VR_MocapAssets`
 
 ___
 ### Installing
