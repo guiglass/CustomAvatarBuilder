@@ -19,7 +19,7 @@ Upon pressing "Import Avatar Model" button and choosing a .blend file the Custom
 
 The avatar would then be available for motion capture by selecting it from the Avatar Browser list in Animation Prep Studio (Lite).
 ___
-Youtube tutorial on how to create custom avatars:
+Youtube tutorials showing how to create custom avatars:
 ## Mixamo:
 [![Youtube Tutorial](https://img.youtube.com/vi/ykJ7O0Bs8oQ/0.jpg)](https://www.youtube.com/watch?v=ykJ7O0Bs8oQ)
 
