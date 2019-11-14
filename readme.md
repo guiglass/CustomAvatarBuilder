@@ -15,7 +15,7 @@ ___
 
 Upon pressing "Import Avatar Model" button and choosing a .blend file the CustomAvatarBuilder will begin processing the model contained in the selected .blend file. Once the CustomAvatarBuilder finishes building the new **Avatar Asset** a folder will be displayed that you can copy and paste into the `VR_MocapAssets` folder located at:
 
-`%USERPROFILE%\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite\VR_MocapAssets`
+`%USERPROFILE%\appdata\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite\VR_MocapAssets`
 
 The avatar would then be available for motion capture by selecting it from the Avatar Browser list in Animation Prep Studio (Lite).
 ___
