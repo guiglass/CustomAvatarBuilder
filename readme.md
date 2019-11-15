@@ -1,22 +1,28 @@
-# Animation Prep Studio (Avatar Builder) V2.0.2
+# Animation Prep Studio (Avatar Builder) V2.2.1
 
 Automation scripts for converting .blend models into avatar assets compatible with [Animation Prep Studio (Lite)](https://drive.google.com/open?id=17MyFQ75dfBuaf5IL4ba-4BH8klWj6-5r "Animation Prep Studio Direct Download"). This builder tool is designed to import .blend files directly, and which were created using blender [version 2.79b](https://download.blender.org/release/Blender2.79/ "Blender Downloads"). 
 
 ## Compatible Skeleton Rigs
-|   Skeletons   |   Supported     |   Expressions   |    Face Rig     |
-| :-------------| :-------------: | :-------------: | :-------------: |      
-|   Makehuman   |     Yes         |  Yes            |  Yes            |
-|   CC3         |     Yes         |  Yes            |  No             |
+|   Compatible Skeletons |   Expressions   |    Face Rig     |
+| :-------------| :-------------: | :-------------: |      
+|  Makehuman    |     Yes            |  Yes            |
+|  CC3          |     Yes            |  No             |
+|  Daz3D (Gen2) |     No             |  No             |
+|  Daz3D (Gen3) |     No             |  No             |
+|  Mixamo       |     No             |  No             |
 
 ___
 
 Upon pressing "Import Avatar Model" button and choosing a .blend file the CustomAvatarBuilder will begin processing the model contained in the selected .blend file. Once the CustomAvatarBuilder finishes building the new **Avatar Asset** a folder will be displayed that you can copy and paste into the `VR_MocapAssets` folder located at:
 
-`%USERPROFILE%\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite\VR_MocapAssets`
+`%USERPROFILE%\appdata\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite\VR_MocapAssets`
 
 The avatar would then be available for motion capture by selecting it from the Avatar Browser list in Animation Prep Studio (Lite).
 ___
-Youtube tutorial on how to create custom avatars:
+Youtube tutorials showing how to create custom avatars:
+## Mixamo:
+[![Youtube Tutorial](https://img.youtube.com/vi/ykJ7O0Bs8oQ/0.jpg)](https://www.youtube.com/watch?v=ykJ7O0Bs8oQ)
+
 ## Makehuman:
 [![Youtube Tutorial](https://img.youtube.com/vi/gRIz8tc7ds8/0.jpg)](https://www.youtube.com/watch?v=gRIz8tc7ds8)
 
@@ -41,7 +47,7 @@ Copy the entire folder:
 
 And paste it into the folder at the path:
 
-`%USERPROFILE%\AppData\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite`
+`%USERPROFILE%\appdata\LocalLow\Animation Prep Studios\AnimationPrepStudio_Lite\VR_MocapAssets`
 
 ___
 ### Installing
