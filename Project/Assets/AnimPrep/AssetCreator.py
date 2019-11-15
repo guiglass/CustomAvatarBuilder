@@ -19,7 +19,7 @@ from PIL import ImageEnhance, ImageTk, Image, ImageDraw
 from distutils.dir_util import copy_tree
 
 from tkinter import Tk, StringVar, Button, Frame, OptionMenu, Scrollbar, Text, Entry, Label, BOTH, LEFT, RIGHT, TOP, BOTTOM, END, SUNKEN, DISABLED, NORMAL, INSERT, YES, NO, Y, X, N, W, S, E
-#import tkFileDialog
+
 from tkinter import filedialog as tkFileDialog
 
 import shutil
