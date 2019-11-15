@@ -4,6 +4,8 @@ using UnityEditor;
 using UnityEngine;
 using System.Linq;
 using System.IO;
+#if UNITY_EDITOR
+using UnityEditor;
 
 [ExecuteInEditMode] public class AnimPrepAssetBuilder : EditorWindow 
 {
@@ -43,6 +45,7 @@ using System.IO;
 
 	void FixPlayerSettings()
 	{
+		Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
 		PlayerSettings.colorSpace = ColorSpace.Linear;
 		PlayerSettings.virtualRealitySupported = true;
 		PlayerSettings.SetVirtualRealitySDKs(BuildTargetGroup.Standalone, new string[] { "OpenVR", } );
