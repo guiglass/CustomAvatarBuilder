@@ -9,7 +9,7 @@ using UnityEditor;
 
 [ExecuteInEditMode] public class AnimPrepAssetBuilder : EditorWindow 
 {
-	public static string BUILDER_VERSION = "2.2.1";
+	public static string BUILDER_VERSION = "2.2.2";
 	
 	[Header("References")]
 

@@ -246,6 +246,16 @@ public class ArmatureLinker : MonoBehaviour
 			faceRenderersParams = faceRenderersParams_Daz3D;
 			break;
 		case ArmatureLinker.CharacterType.MIXAMO:
+			_breastL = chest.FindDeepChild ("LeftPectoral");
+			if (_breastL != null) {
+				breastL = _breastL;
+			}
+
+			_breastR = chest.FindDeepChild ("RightPectoral");
+			if (_breastR != null) {
+				breastR = _breastR;
+			}
+			
 			faceRenderersParams = faceRenderersParams_Mixamo;
 			break;
 		case ArmatureLinker.CharacterType.CC3:
