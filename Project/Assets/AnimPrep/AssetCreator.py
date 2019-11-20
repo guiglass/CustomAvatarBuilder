@@ -4,7 +4,7 @@ __author__ = "Grant Olsen"
 __copyright__ = "Copyright 2019, Animation Prep Studios"
 __credits__ = [""]
 __license__ = "GPL"
-__version__ = "2.2.1"
+__version__ = "2.2.2"
 __title__ = 'Asset Creator'
 import os, sys, json, time, pickle
 
@@ -19,7 +19,7 @@ from PIL import ImageEnhance, ImageTk, Image, ImageDraw
 from distutils.dir_util import copy_tree
 
 from tkinter import Tk, StringVar, Button, Frame, OptionMenu, Scrollbar, Text, Entry, Label, BOTH, LEFT, RIGHT, TOP, BOTTOM, END, SUNKEN, DISABLED, NORMAL, INSERT, YES, NO, Y, X, N, W, S, E
-
+#import tkFileDialog
 from tkinter import filedialog as tkFileDialog
 
 import shutil
@@ -315,6 +315,35 @@ if armature is not None:
 		bpy.ops.object.mode_set(mode='OBJECT')
 
 
+
+	print("Apply Armature Scale")
+	#apply the aramture scale as 1,1,1 then fix pose offsets caused by applying the new scale
+	armature.select = True
+	bpy.context.scene.objects.active = armature
+
+	for bone in armature.pose.bones:
+		#some characters have twist bones, they look strange after applying scale (unless they are completely reset)
+		if "Twist" in bone.name:
+			bone.location = Vector( (0,0,0) )
+			bone.rotation_quaternion = Quaternion( (0, 0, 0), 0 )
+			bone.scale = Vector( (1, 1, 1) )
+			bone.keyframe_insert(data_path="location")#also make sure to update the keyframes
+			bone.keyframe_insert(data_path="rotation_quaternion")
+			bone.keyframe_insert(data_path="scale")
+
+	highestBonePoint = 0
+	for bone in armature.pose.bones:
+		global_location = armature.matrix_world * bone.matrix * bone.location
+		highestBonePoint = max(highestBonePoint, global_location.z)
+
+	typicalHumanHeight = 1.4
+	s = typicalHumanHeight / highestBonePoint #create a multiplier to proper scale the armature to the height of an average human
+	armature.scale = Vector(x * y for x, y in zip(Vector( (s, s, s) ), armature.scale ))
+	bpy.ops.object.mode_set(mode='POSE', toggle=False) #must toggle pose mode to update hip bone position, otherwise hip might move after applying the scale
+	bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+	print("Adjust Armature Scale " + str(s))
+
+
 	if csvdict is None:
 		print("Skipping .csv template...")
 	if csvdict is not None:
@@ -338,7 +367,7 @@ if armature is not None:
 					pb = armature.data.edit_bones[keyParent]
 
 					b.head = pb.head
-					b.tail = pb.head
+					b.tail = pb.tail
 
 					b.head += offset
 					b.tail += offset + Vector((0,1,0))
@@ -355,20 +384,6 @@ if armature is not None:
 			add_recursive()
 			bpy.ops.object.mode_set(mode='OBJECT')
 
-	print("Apply Armature Scale")
-	#apply the aramture scale as 1,1,1 then fix pose offsets caused by applying the new scale
-	armature.select = True
-	bpy.context.scene.objects.active = armature
-
-	for bone in armature.pose.bones:
-		#some characters have twist bones, they look strange after applying scale (unless they are completely reset)
-		if "Twist" in bone.name:
-			bone.location = Vector( (0,0,0) )
-			bone.rotation_quaternion = Quaternion( (0, 0, 0), 0 )
-			bone.scale = Vector( (1, 1, 1) )
-			bone.keyframe_insert(data_path="location")#also make sure to update the keyframes
-			bone.keyframe_insert(data_path="rotation_quaternion")
-			bone.keyframe_insert(data_path="scale")
 
 	mag = armature.pose.bones[0].matrix.translation.magnitude #if the zeroth bone is very close to the origin, then use the acutal hip is probably at index 1
 	hipBoneIndex = 0 if mag > 0.01 else 1 #determine which of the fist two bones is probably the hip bone, models have root bones that at the origin which should be ignored because it's not the actual hip bone.
@@ -378,6 +393,8 @@ if armature is not None:
 	pose_bone = armature.pose.bones[hipBoneIndex]
 	obj = pose_bone.id_data
 	matrix_final = obj.matrix_world * pose_bone.matrix
+
+
 
 	#apply the armature scale
 	bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
@@ -493,11 +510,8 @@ if armature is not None:
 		exit()
 
 	# iterate over all bones of the active object
-	highestBonePoint = 0
-
 	print("Check All Pose Bones")
 	for bone in armature.pose.bones:
-		highestBonePoint = max(highestBonePoint, bone.head.z * armature.scale.z)
 		# iterate over all drivers now
 		# this should give better performance than the other way around
 		# as most armatures have more bones than drivers
@@ -606,8 +620,6 @@ if armature is not None:
 
 				#expressions[i] = {'constant': expression[0], 'variable': expression[1], 'axis': expression[2]}
 
-
-
 			#expression_data.append({
 			#   'bone_name': boneName,
 			#   'drivers': expressions
@@ -647,14 +659,6 @@ print("Remove SUBSURF Modifiers")
 
 #bpy.ops.object.select_all(action='DESELECT')
 #bpy.ops.object.select_all(action='SELECT')
-
-tallest_human_ever = 8.11 * 0.3048
-if highestBonePoint >= 2*tallest_human_ever: #impossibly tall character, must be scaled down (maybe user accidentally selected decimeters instead of meters)
-	print("Impossibly tall character, Re-scalling")
-	bpy.ops.transform.resize(value=(0.1, 0.1, 0.1), constraint_axis=(False, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
-	bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-
-
 
 print("Fix Children")
 for obj in bpy.data.objects:
