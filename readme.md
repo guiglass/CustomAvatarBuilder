@@ -9,7 +9,8 @@ Automation scripts for converting .blend models into avatar assets compatible wi
 |  CC3          |     Yes            |  No             |
 |  Daz3D (Gen2) |     No             |  No             |
 |  Daz3D (Gen3) |     No             |  No             |
-|  Mixamo       |     No             |  No             |
+|  Mixamo       |     Partial        |  No             |
+|  Fuse CC      |     Yes            |  No             |
 
 ___
 
