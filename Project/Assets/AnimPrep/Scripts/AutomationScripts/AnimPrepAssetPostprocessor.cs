@@ -630,7 +630,7 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 	//TEXTURES
 	void OnPreprocessTexture()
 	{
-        assetPath = assetPath.Replace('/', Path.DirectorySeparatorChar); //fix the path so that it uses the correct seperator for this system
+		assetPath = assetPath.Replace('/', Path.DirectorySeparatorChar); //fix the path so that it uses the correct seperator for this system
 
         if (!assetPath.StartsWith (processingFolder)) { //only check textures in the upload processing folder
 			//Debug.LogWarning(assetPath + " TEXTURE DOES NOT BELONG TO: " + processingFolder);
@@ -674,7 +674,7 @@ public class AnimPrepAssetPostprocessor : AssetPostprocessor {
 			}
 		}
 
-		importer.textureType = TextureImporterType.Default; //set the default, if nothing was changed
+		//importer.textureType = TextureImporterType.Default; //set the default, if nothing was changed
 	}
 		
 
