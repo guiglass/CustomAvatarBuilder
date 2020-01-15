@@ -51,7 +51,7 @@ public class BuildAvatar : MonoBehaviour {
 				rootBoneName = "Hips";
 				break;
 			case ArmatureLinker.CharacterType.CC3:
-				rootBoneName = "boneroot";
+				rootBoneName = "Hip";//"boneroot";
 				break;
 			case ArmatureLinker.CharacterType.MAKEHUMAN:
 			case ArmatureLinker.CharacterType.DEFAULT:
@@ -67,8 +67,6 @@ public class BuildAvatar : MonoBehaviour {
 				if (child.GetComponent<SkinnedMeshRenderer> ()) {
 					child.transform.parent = avatarMesh.transform;
 				} else {
-
-
 					if (child.childCount > 0 && child.GetChild (0).name.ToLower ().Equals (rootBoneName.ToLower ())) {//boneroot")) {
 						metarig = child.gameObject;//.GetChild (0).gameObject;// child.gameObject;
 
@@ -78,7 +76,6 @@ public class BuildAvatar : MonoBehaviour {
 				}
 
 			}
-
 		}
 
 		var linker = GetComponentInChildren<ArmatureLinker> ();
