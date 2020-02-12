@@ -3,14 +3,14 @@
 Automation scripts for converting .blend models into avatar assets compatible with [Animation Prep Studio (Lite)](https://drive.google.com/open?id=17MyFQ75dfBuaf5IL4ba-4BH8klWj6-5r "Animation Prep Studio Direct Download"). This builder tool is designed to import .blend files directly, and which were created using blender [version 2.79b](https://download.blender.org/release/Blender2.79/ "Blender Downloads"). 
 
 ## Compatible Skeleton Rigs
-|   Compatible Skeletons |   Expressions   |    Face Rig     |
+|   Compatible Skeletons |   Expressions   |    Face Capture     |
 | :-------------| :-------------: | :-------------: |      
-|  Makehuman    |     Yes            |  Yes            |
-|  CC3          |     Yes            |  No             |
+|  Makehuman    |     Yes            |  Soon            |
+|  CC3          |     Yes            |  Yes             |
 |  Daz3D (Gen2) |     No             |  No             |
 |  Daz3D (Gen3) |     No             |  No             |
-|  Mixamo       |     Partial        |  No             |
-|  Fuse CC      |     Yes            |  No             |
+|  Mixamo       |     Partial        |  Yes             |
+|  Fuse CC      |     Yes            |  Yes             |
 
 ___
 
