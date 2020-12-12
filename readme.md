@@ -7,7 +7,7 @@ Automation scripts for converting .blend models into avatar assets compatible wi
 ## Compatible Skeleton Rigs
 |   Compatible Skeletons |   Expressions   |    Face Capture     |
 | :-------------| :-------------: | :-------------: |      
-|  Makehuman    |     Yes            |  Soon            |
+|  Makehuman    |     Yes            |  Yes            |
 |  CC3          |     Yes            |  Yes             |
 |  Daz3D (Gen2) |     No             |  No             |
 |  Daz3D (Gen3) |     No             |  No             |
